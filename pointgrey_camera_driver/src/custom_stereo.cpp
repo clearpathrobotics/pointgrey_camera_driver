@@ -321,10 +321,10 @@ private:
       wfov_camera_msgs::WFOVImagePtr wfov_image(new wfov_camera_msgs::WFOVImage);
       // Get the image from the camera library
       NODELET_DEBUG("Starting a new grab from camera.");
-      cam.grabImage(wfov_image->image, camera_name  + frame_id_);
+      cam.grabImage(wfov_image->image, frame_id_ + "_" + camera_name);
 
       // Set other values
-      wfov_image->header.frame_id = camera_name + frame_id_;
+      wfov_image->header.frame_id = frame_id_ + "_" + camera_name;
 
       wfov_image->gain = gain_;
       wfov_image->white_balance_blue = wb_blue_;
