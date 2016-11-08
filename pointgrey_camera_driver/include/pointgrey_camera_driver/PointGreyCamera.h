@@ -353,6 +353,12 @@ public:
   */
   static void handleError(const std::string &prefix, const FlyCapture2::Error &error);
 
+  /**
+   * \brief Use a software trigger to trigger the camera
+   */
+  bool trigger();
+
+
 };
 
 #endif

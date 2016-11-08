@@ -631,6 +631,10 @@ static int sourceNumberFromGpioName(const std::string s)
   {
     return 3;
   }
+  else if(s.compare("software") == 0)
+  {
+    return 7;
+  }
   else
   {
     // Unrecognized pin
@@ -1150,4 +1154,21 @@ void PointGreyCamera::handleError(const std::string &prefix, const FlyCapture2::
     std::string desc(error.GetDescription());
     throw std::runtime_error(prefix + start + out.str() + " " + desc);
   }
+}
+
+bool PointGreyCamera::trigger()
+{
+  const unsigned int software_trigger_addr = 0x62C;
+  unsigned int reg_val = 0;
+
+  Error error;
+  do {
+    error = cam_.ReadRegister(software_trigger_addr, &reg_val);
+    if (error != PGRERROR_OK) {
+      return false;
+    }
+  } while ((reg_val >> 31) != 0);
+
+  const unsigned fire = 0x80000000;
+  return cam_.WriteRegister(software_trigger_addr, fire) == PGRERROR_OK;
 }

@@ -52,12 +52,12 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
 namespace pointgrey_camera_driver
 {
 
-class PointGreyCameraNodelet: public nodelet::Nodelet
+class PointGreyCustomStereoNodelet: public nodelet::Nodelet
 {
 public:
-  PointGreyCameraNodelet() {}
+  PointGreyCustomStereoNodelet() {}
 
-  ~PointGreyCameraNodelet()
+  ~PointGreyCustomStereoNodelet()
   {
     if(pubThread_)
     {
@@ -194,7 +194,7 @@ private:
     else if(!sub_)     // We need to connect
     {
       // Start the thread to loop through and publish messages
-      pubThread_.reset(new boost::thread(boost::bind(&pointgrey_camera_driver::PointGreyCameraNodelet::devicePoll, this)));
+      pubThread_.reset(new boost::thread(boost::bind(&pointgrey_camera_driver::PointGreyCustomStereoNodelet::devicePoll, this)));
     }
     else
     {
@@ -209,12 +209,12 @@ private:
     nh.getParam(prefix + "_serial", serial_xmlrpc);
     if (serial_xmlrpc.getType() == XmlRpc::XmlRpcValue::TypeInt)
     {
-      nh.param<int>("serial", serial, 0);
+      nh.param<int>(prefix + "_serial", serial, 0);
     }
     else if (serial_xmlrpc.getType() == XmlRpc::XmlRpcValue::TypeString)
     {
       std::string serial_str;
-      nh.param<std::string>("serial", serial_str, "0");
+      nh.param<std::string>(prefix + "_serial", serial_str, "0");
       std::istringstream(serial_str) >> serial;
     }
     else
@@ -236,6 +236,8 @@ private:
     // Get nodeHandles
     ros::NodeHandle &nh = getMTNodeHandle();
     ros::NodeHandle &pnh = getMTPrivateNodeHandle();
+    ros::NodeHandle left_nh(nh, "left");
+    ros::NodeHandle right_nh(nh, "right");
 
     // Get a serial number through ros
     int left_serial = getSerial("left", pnh);
@@ -266,23 +268,23 @@ private:
     // Start up the dynamic_reconfigure service, note that this needs to stick around after this function ends
     srv_ = boost::make_shared <dynamic_reconfigure::Server<pointgrey_camera_driver::PointGreyConfig> > (pnh);
     dynamic_reconfigure::Server<pointgrey_camera_driver::PointGreyConfig>::CallbackType f =
-      boost::bind(&pointgrey_camera_driver::PointGreyCameraNodelet::paramCallback, this, _1, _2);
+      boost::bind(&pointgrey_camera_driver::PointGreyCustomStereoNodelet::paramCallback, this, _1, _2);
     srv_->setCallback(f);
 
     it_.reset(new image_transport::ImageTransport(nh));
-    image_transport::SubscriberStatusCallback cb = boost::bind(&PointGreyCameraNodelet::connectCb, this);
+    image_transport::SubscriberStatusCallback cb = boost::bind(&PointGreyCustomStereoNodelet::connectCb, this);
 
     // Start the camera info manager and attempt to load any configurations
     // Left
     std::stringstream left_cinfo_name;
     left_cinfo_name << left_serial;
-    left_cinfo_.reset(new camera_info_manager::CameraInfoManager(nh, left_cinfo_name.str(), left_camera_info_url));
+    left_cinfo_.reset(new camera_info_manager::CameraInfoManager(left_nh, left_cinfo_name.str(), left_camera_info_url));
     left_it_pub_ = it_->advertiseCamera("left/image_raw", 5, cb, cb);
 
     // Left
     std::stringstream right_cinfo_name;
     right_cinfo_name << right_serial;
-    right_cinfo_.reset(new camera_info_manager::CameraInfoManager(nh, right_cinfo_name.str(), right_camera_info_url));
+    right_cinfo_.reset(new camera_info_manager::CameraInfoManager(right_nh, right_cinfo_name.str(), right_camera_info_url));
     right_it_pub_ = it_->advertiseCamera("right/image_raw", 5, cb, cb);
 
     // Set up diagnostics
@@ -301,7 +303,7 @@ private:
     pnh.param<double>("min_acceptable_delay", min_acceptable, 0.0);
     double max_acceptable; // The maximum publishing delay (in seconds) before warning.
     pnh.param<double>("max_acceptable_delay", max_acceptable, 0.2);
-    ros::SubscriberStatusCallback cb2 = boost::bind(&PointGreyCameraNodelet::connectCb, this);
+    ros::SubscriberStatusCallback cb2 = boost::bind(&PointGreyCustomStereoNodelet::connectCb, this);
     //pub_.reset(new diagnostic_updater::DiagnosedPublisher<wfov_camera_msgs::WFOVImage>(nh.advertise<wfov_camera_msgs::WFOVImage>("image", 5, cb2, cb2),
     //           updater_,
     //           diagnostic_updater::FrequencyStatusParam(&min_freq_, &max_freq_, freq_tolerance, window_size),
@@ -311,7 +313,8 @@ private:
 
   bool getImage(const std::string& camera_name, PointGreyCamera& cam, 
                   boost::shared_ptr<camera_info_manager::CameraInfoManager> cinfo,
-                  image_transport::CameraPublisher it_pub)
+                  image_transport::CameraPublisher it_pub,
+                  ros::Time timestamp)
   {
     try
     {
@@ -329,9 +332,8 @@ private:
 
       wfov_image->temperature = cam.getCameraTemperature();
 
-      ros::Time time = ros::Time::now();
-      wfov_image->header.stamp = time;
-      wfov_image->image.header.stamp = time;
+      wfov_image->header.stamp = timestamp;
+      wfov_image->image.header.stamp = timestamp;
 
       // Set the CameraInfo message
       sensor_msgs::CameraInfoPtr ci; ///< Camera Info message.
@@ -479,7 +481,7 @@ private:
             // Subscribe to gain and white balance changes
             {
               boost::mutex::scoped_lock scopedLock(connect_mutex_);
-              sub_ = getMTNodeHandle().subscribe("image_exposure_sequence", 10, &pointgrey_camera_driver::PointGreyCameraNodelet::gainWBCallback, this);
+              sub_ = getMTNodeHandle().subscribe("image_exposure_sequence", 10, &pointgrey_camera_driver::PointGreyCustomStereoNodelet::gainWBCallback, this);
             }
 
             state = CONNECTED;
@@ -512,12 +514,20 @@ private:
 
           break;
         case STARTED:
+          {
           // Trigger Cameras
+          if (!left_cam_.trigger() || !right_cam_.trigger())
+          {
+            NODELET_ERROR("Could not trigger camera");
+          }
+
+          ros::Time stamp = ros::Time::now();
           
           // Get Images
-          if (!getImage("left_", left_cam_, left_cinfo_, left_it_pub_) || !getImage("right_", right_cam_, right_cinfo_, right_it_pub_))
+          if (!getImage("left_", left_cam_, left_cinfo_, left_it_pub_, stamp) || !getImage("right_", right_cam_, right_cinfo_, right_it_pub_, stamp))
           {
             state = ERROR;
+          }
           }
           break;
         default:
@@ -599,5 +609,5 @@ private:
   pointgrey_camera_driver::PointGreyConfig config_;
 };
 
-PLUGINLIB_DECLARE_CLASS(pointgrey_camera_driver, PointGreyCameraNodelet, pointgrey_camera_driver::PointGreyCameraNodelet, nodelet::Nodelet);  // Needed for Nodelet declaration
+PLUGINLIB_DECLARE_CLASS(pointgrey_camera_driver, PointGreyCustomStereoNodelet, pointgrey_camera_driver::PointGreyCustomStereoNodelet, nodelet::Nodelet);  // Needed for Nodelet declaration
 }
