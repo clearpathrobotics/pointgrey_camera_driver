@@ -20,8 +20,9 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
 /**
    @file nodelet.cpp
    @author Chad Rockey
-   @date July 13, 2011
-   @brief ROS nodelet for the Point Grey Chameleon Camera
+   @author James Servos
+   @date Nov 9, 2016
+   @brief ROS nodelet for a pair of Point Grey Chameleon Cameras
 
    @attention Copyright (C) 2011
    @attention National Robotics Engineering Center
@@ -106,23 +107,6 @@ private:
       // Store CameraInfo binning information
       binning_x_ = 1;
       binning_y_ = 1;
-      /*
-      if(config.video_mode == "640x480_mono8" || config.video_mode == "format7_mode1")
-      {
-        binning_x_ = 2;
-        binning_y_ = 2;
-      }
-      else if(config.video_mode == "format7_mode2")
-      {
-        binning_x_ = 0;
-        binning_y_ = 2;
-      }
-      else
-      {
-        binning_x_ = 0;
-        binning_y_ = 0;
-      }
-      */
 
       // Store CameraInfo RegionOfInterest information
       if(config.video_mode == "format7_mode0" || config.video_mode == "format7_mode1" || config.video_mode == "format7_mode2")
@@ -528,6 +512,8 @@ private:
               if (!left_cam_.trigger() || !right_cam_.trigger())
               {
                 NODELET_ERROR("Could not trigger camera");
+                state = ERROR;
+                break;
               }
             }
 

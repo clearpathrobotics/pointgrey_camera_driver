@@ -6,7 +6,7 @@
 
 <library path="lib/libPointGreyCustomStereoNodelet">
   <class name="pointgrey_camera_driver/PointGreyCustomStereoNodelet" type="pointgrey_camera_driver::PointGreyCustomStereoNodelet" base_class_type="nodelet::Nodelet">
-    <description>This is the nodelet for the Point Grey Camera Driver.</description>
+    <description>This is the nodelet for a custom stereo setup using Point Grey Camera Driver.</description>
   </class>
 </library>
 
