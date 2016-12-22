@@ -1,0 +1,60 @@
+<launch>
+
+  <!-- Argument should be set to main namespace for the cameras -->
+  <arg name="camera" default="stereo" />
+
+  <!-- Set this to true if you need left camera to trigger the right one -->
+  <arg name="sync" default="true" />
+
+  <!-- Replace your camera serial numbers here -->
+  <!-- One easy way to obtain is to use the script
+       $ rosrun pointgrey_camera_driver list_cameras -->
+  <arg name="left_serial" default="15085973" />
+  <arg name="right_serial" default="15030710" />
+
+  <!-- Path to the folder containing the stereo calibration yaml files -->
+  <arg name="camera_yaml_path" default="/var/lib/pointgrey_camera/" />
+
+  <group ns="$(arg camera)" >
+    <!-- Common nodelet manager process -->
+    <node pkg="nodelet" type="nodelet" name="camera_nodelet_manager" args="manager" />
+
+    <!-- Left camera namespace -->
+    <group ns="left">
+      <node pkg="nodelet" type="nodelet" name="camera_nodelet"
+        args="load pointgrey_camera_driver/PointGreyCameraNodelet /$(arg camera)/camera_nodelet_manager" >
+        <!-- Common Parameters from the file. -->
+        <rosparam file="$(find pointgrey_camera_driver)/params/camera.yaml" />
+        <rosparam if="$(arg sync)" file="$(find pointgrey_camera_driver)/params/left_camera.yaml" />
+        <!-- Parameters specific to this camera. -->
+        <param name="frame_id" value="stereo_left" />
+        <param name="serial" value="$(arg left_serial)" />
+        <param name="camera_info_url" value="$(arg camera_yaml_path)/left.yaml" />
+      </node>
+
+      <include file="$(find image_proc)/launch/image_proc.launch">
+        <arg name="manager" value="/$(arg camera)/camera_nodelet_manager" />
+      </include>
+    </group>
+
+    <!-- Right camera namespace -->
+    <group ns="right">
+      <node pkg="nodelet" type="nodelet" name="camera_nodelet"
+        args="load pointgrey_camera_driver/PointGreyCameraNodelet /$(arg camera)/camera_nodelet_manager" >
+        <!-- Common Parameters from the file. -->
+        <rosparam file="$(find pointgrey_camera_driver)/params/camera.yaml" />
+        <rosparam if="$(arg sync)" file="$(find pointgrey_camera_driver)/params/right_camera.yaml" />
+        <!-- Parameters specific to this camera. -->
+        <param name="frame_id" value="stereo_right" />
+        <param name="serial" value="$(arg right_serial)" />
+        <param name="camera_info_url" value="$(arg camera_yaml_path)/right.yaml" />
+      </node>
+
+      <include file="$(find image_proc)/launch/image_proc.launch">
+        <arg name="manager" value="/$(arg camera)/camera_nodelet_manager" />
+      </include>
+    </group>
+
+  </group>
+
+</launch>
