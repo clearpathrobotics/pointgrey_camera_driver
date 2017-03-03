@@ -46,6 +46,9 @@ add_dependencies(PointGreyCamera ${PROJECT_NAME}_gencfg)
 add_library(PointGreyCameraNodelet src/nodelet.cpp)
 target_link_libraries(PointGreyCameraNodelet PointGreyCamera ${catkin_LIBRARIES})
 
+add_library(PointGreyCustomStereoNodelet src/custom_stereo.cpp)
+target_link_libraries(PointGreyCustomStereoNodelet PointGreyCamera ${catkin_LIBRARIES})
+
 add_library(PointGreyStereoCameraNodelet src/stereo_nodelet.cpp)
 target_link_libraries(PointGreyStereoCameraNodelet PointGreyCamera ${catkin_LIBRARIES})
 
