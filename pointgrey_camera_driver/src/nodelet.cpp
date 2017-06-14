@@ -160,7 +160,8 @@ private:
     NODELET_DEBUG("Connect callback!");
     boost::mutex::scoped_lock scopedLock(connect_mutex_); // Grab the mutex.  Wait until we're done initializing before letting this function through.
     // Check if we should disconnect (there are 0 subscribers to our data)
-    if(it_pub_.getNumSubscribers() == 0 && pub_->getPublisher().getNumSubscribers() == 0)
+    if( (it_pub_.getNumSubscribers() == 0 && image_pub_.getNumSubscribers() == 0)
+        && pub_->getPublisher().getNumSubscribers() == 0)
     {
       if (pubThread_)
       {
@@ -266,8 +267,10 @@ private:
     // Get the location of our camera config yaml
     std::string camera_info_url;
     pnh.param<std::string>("camera_info_url", camera_info_url, "");
+    pnh.param<bool>("publish_camera_info", publish_camera_info_, "true");
     // Get the desired frame_id, set to 'camera' if not found
     pnh.param<std::string>("frame_id", frame_id_, "camera");
+
 
     // Do not call the connectCb function until after we are done initializing.
     boost::mutex::scoped_lock scopedLock(connect_mutex_);
@@ -286,7 +289,15 @@ private:
     // Publish topics using ImageTransport through camera_info_manager (gives cool things like compression)
     it_.reset(new image_transport::ImageTransport(nh));
     image_transport::SubscriberStatusCallback cb = boost::bind(&PointGreyCameraNodelet::connectCb, this);
-    it_pub_ = it_->advertiseCamera("image_raw", 5, cb, cb);
+
+    if(publish_camera_info_)
+    {
+      it_pub_ = it_->advertiseCamera("image_raw", 5, cb, cb);
+    }
+    else
+    {
+      image_pub_ = it_->advertise("image_raw", 5, cb, cb);
+    }
 
     // Set up diagnostics
     updater_.setHardwareID("pointgrey_camera " + cinfo_name.str());
@@ -514,10 +525,21 @@ private:
             pub_->publish(wfov_image);
 
             // Publish the message using standard image transport
-            if(it_pub_.getNumSubscribers() > 0)
+            if(publish_camera_info_)
             {
-              sensor_msgs::ImagePtr image(new sensor_msgs::Image(wfov_image->image));
-              it_pub_.publish(image, ci_);
+              if(it_pub_.getNumSubscribers() > 0)
+              {
+                sensor_msgs::ImagePtr image(new sensor_msgs::Image(wfov_image->image));
+                it_pub_.publish(image, ci_);
+              }
+            }
+            else
+            {
+              if(image_pub_.getNumSubscribers() > 0)
+              {
+                sensor_msgs::ImagePtr image(new sensor_msgs::Image(wfov_image->image));
+                image_pub_.publish(image);
+              }
             }
           }
           catch(CameraTimeoutException& e)
@@ -565,6 +587,7 @@ private:
   image_transport::CameraPublisher it_pub_; ///< CameraInfoManager ROS publisher
   boost::shared_ptr<diagnostic_updater::DiagnosedPublisher<wfov_camera_msgs::WFOVImage> > pub_; ///< Diagnosed publisher, has to be a pointer because of constructor requirements
   ros::Subscriber sub_; ///< Subscriber for gain and white balance changes.
+  image_transport::Publisher image_pub_;
 
   boost::mutex connect_mutex_;
 
@@ -597,6 +620,9 @@ private:
   int packet_size_;
   /// GigE packet delay:
   int packet_delay_;
+
+  // Flag to toggl publishing camera info.
+  bool publish_camera_info_;
 
   /// Configuration:
   pointgrey_camera_driver::PointGreyConfig config_;
