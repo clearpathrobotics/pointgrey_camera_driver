@@ -1,0 +1,6 @@
+<launch>
+  <node name="spinnaker_test_node" pkg="pointgrey_camera_driver" type="spinnaker_test_node" cwd="node">
+
+  </node>
+
+</launch>

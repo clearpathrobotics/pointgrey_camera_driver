@@ -43,8 +43,53 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
 #include <pointgrey_camera_driver/PointGreyConfig.h>
 
 // FlyCapture SDK from Point Grey
-#include "flycapture/FlyCapture2.h"
+// #include "flycapture/FlyCapture2.h"
 
+// #include "pointgrey_camera_driver/spinnaker_camera.h"
+
+
+// Spinnaker SDK
+#include "Spinnaker.h"
+#include "SpinGenApi/SpinnakerGenApi.h"
+
+
+/* Struct for Point Grey Camera Configs */
+struct PointGreyCameraConfig
+{
+  bool is_left;
+  int binning_vertical;
+  int decimation_vertical;
+  std::string pixel_format;
+  std::string video_mode;
+  std::string line_selector;
+  std::string line_mode;
+  std::string line_source;
+  std::string trigger_source;
+  std::string trigger_selector;
+  std::string trigger_activation;
+  std::string acquisition_frame_rate_auto;
+  bool acquisition_frame_rate_enabled;
+  float acquisition_frame_rate;
+  std::string exposure_auto;
+  float exposure_time;
+  float auto_exposure_exposure_time_upper_limit;
+  std::string gain_auto;
+  float gain;
+  float auto_gain_lower_limit;
+  float auto_gain_upper_limit;
+  std::string balance_white_auto;
+  float balance_ratio_red;
+  float balance_ratio_blue;
+  float black_level;
+  bool gamma_enabled;
+  bool hue_enabled;
+  bool saturation_enabled;
+  float gamma;
+  float hue;
+  float saturation;
+  bool flip_left;
+  bool flip_right;
+};
 
 class PointGreyCamera
 {
@@ -66,7 +111,7 @@ public:
   *
   * \return Returns true when the configuration could be applied without modification.
   */
-  bool setNewConfiguration(pointgrey_camera_driver::PointGreyConfig &config, const uint32_t &level);
+  bool setNewConfiguration(PointGreyCameraConfig &config, const uint32_t &level);
 
   /** Parameters that need a sensor to be stopped completely when changed. */
   static const uint8_t LEVEL_RECONFIGURE_CLOSE = 3;
@@ -84,21 +129,21 @@ public:
   * this will connect to the first camera.  Connecting to the first camera is not recommended for multi-camera or production systems.
   * This function must be called before setNewConfiguration() or start()!
   */
-  void connect();
+  int connect();
 
   /*!
   * \brief Disconnects from the camera.
   *
   * Disconnects the camera and frees it.
   */
-  void disconnect();
+  int disconnect();
 
   /*!
   * \brief Starts the camera loading data into its buffer.
   *
   * This function will start the camera capturing images and loading them into the buffer.  To retrieve images, grabImage must be called.
   */
-  void start();
+  int start();
 
   /*!
   * \brief Stops the camera loading data into its buffer.
@@ -109,6 +154,7 @@ public:
   */
   bool stop();
 
+
   /*!
   * \brief Loads the raw data from the cameras buffer.
   *
@@ -116,9 +162,10 @@ public:
   * \param image sensor_msgs::Image that will be filled with the image currently in the buffer.
   * \param frame_id The name of the optical frame of the camera.
   */
-  void grabImage(sensor_msgs::Image &image, const std::string &frame_id);
+  int grabImage(sensor_msgs::Image &image, const std::string &frame_id);
 
-  void grabStereoImage(sensor_msgs::Image &image, const std::string &frame_id, sensor_msgs::Image &second_image, const std::string &second_frame_id);
+  void grabStereoImage(sensor_msgs::Image &image, const std::string &frame_id,
+                      sensor_msgs::Image &second_image, const std::string &second_frame_id);
 
   /*!
   * \brief Will set grabImage timeout for the camera.
@@ -127,7 +174,7 @@ public:
   * \param timeout The desired timeout value (in seconds)
   *
   */
-  void setTimeout(const double &timeout);
+  // void setTimeout(const double &timeout);
 
   /*!
   * \brief Used to set the serial number for the camera you wish to connect to.
@@ -144,7 +191,7 @@ public:
   * \param auto_packet_size Flag stating if packet size should be automatically determined or not.
   * \param packet_size The packet size value to use if auto_packet_size is false.
   */
-  void setGigEParameters(bool auto_packet_size, unsigned int packet_size, unsigned int packet_delay);
+  // void setGigEParameters(bool auto_packet_size, unsigned int packet_size, unsigned int packet_delay);
 
   std::vector<uint32_t> getAttachedCameras();
 
@@ -155,30 +202,58 @@ public:
   *
   * \return The reported temperature in Celsius.
   */
-  float getCameraTemperature();
+  // float getCameraTemperature();
 
-  void setGain(double &gain);
+  void setGain(float& gain);
 
-  void setBRWhiteBalance(bool auto_white_balance, uint16_t &blue, uint16_t &red);
+  // void setBRWhiteBalance(bool auto_white_balance, uint16_t &blue, uint16_t &red);
 
-  uint getGain();
+  // uint getGain();
 
-  uint getShutter();
+  // uint getShutter();
 
-  uint getBrightness();
+  // uint getBrightness();
 
-  uint getExposure();
+  // uint getExposure();
 
-  uint getWhiteBalance();
+  // uint getWhiteBalance();
 
-  uint getROIPosition();
+  // uint getROIPosition();
+
+  uint32_t getSerial()
+  {
+    return serial_;
+  }
 
 private:
 
   uint32_t serial_; ///< A variable to hold the serial number of the desired camera.
-  FlyCapture2::BusManager busMgr_; ///< A FlyCapture2::BusManager that is responsible for finding the appropriate camera.
-  FlyCapture2::Camera cam_; ///<  A FlyCapture2::Camera set by the bus manager.
-  FlyCapture2::ImageMetadata metadata_; ///< Metadata from the last image, stores useful information such as timestamp, gain, shutter, brightness, exposure.
+
+  Spinnaker::SystemPtr system_;
+  Spinnaker::CameraList camList_;
+  Spinnaker::CameraPtr pCam_;
+  Spinnaker::GenApi::INodeMap *node_map_;
+
+  Spinnaker::ChunkData image_metadata_;
+
+
+  // Use the following enum and global constant to select whether chunk data is
+  // displayed from the image or the nodemap.
+  enum chunkDataType
+  {
+    IMAGE,
+    NODEMAP
+  };
+  const chunkDataType chosenChunkData = IMAGE;
+
+  // Camera
+  // std::shared_ptr<SpinnakerCamera> cam_;
+  // bool exec_stop_;
+
+
+  // FlyCapture2::BusManager busMgr_; ///< A FlyCapture2::BusManager that is responsible for finding the appropriate camera.
+  // FlyCapture2::Camera cam_; ///<  A FlyCapture2::Camera set by the bus manager.
+  // FlyCapture2::ImageMetadata metadata_; ///< Metadata from the last image, stores useful information such as timestamp, gain, shutter, brightness, exposure.
 
   boost::mutex mutex_; ///< A mutex to make sure that we don't try to grabImages while reconfiguring or vice versa.  Implemented with boost::mutex::scoped_lock.
   volatile bool captureRunning_; ///< A status boolean that checks if the camera has been started and is loading images into its buffer.ù
@@ -194,13 +269,21 @@ private:
   /// GigE packet delay:
   unsigned int packet_delay_;
 
+
+  // This function configures the camera to add chunk data to each image. It does
+  // this by enabling each type of chunk data before enabling chunk data mode.
+  // When chunk data is turned on, the data is made available in both the nodemap
+  // and each image.
+  int ConfigureChunkData(Spinnaker::GenApi::INodeMap & nodeMap);
+
   /*!
   * \brief Changes the video mode of the connected camera.
   *
   * This function will change the camera to the desired videomode and allow up the maximum framerate for that mode.
   * \param videoMode string of desired video mode, will be changed if unsupported.
   */
-  void setVideoMode(FlyCapture2::VideoMode &videoMode);
+  // void setVideoMode(FlyCapture2::VideoMode &videoMode);
+  void setVideoMode(const std::string& videoMode);
 
   /*!
   * \brief Changes the camera into Format7 mode with the associated parameters.
@@ -215,7 +298,7 @@ private:
   *
   * \return Returns true when the configuration could be applied without modification.
   */
-  bool setFormat7(FlyCapture2::Mode &fmt7Mode, FlyCapture2::PixelFormat &fmt7PixFmt, uint16_t &roi_width, uint16_t &roi_height, uint16_t &roi_offset_x, uint16_t &roi_offset_y);
+  // bool setFormat7(FlyCapture2::Mode &fmt7Mode, FlyCapture2::PixelFormat &fmt7PixFmt, uint16_t &roi_width, uint16_t &roi_height, uint16_t &roi_offset_x, uint16_t &roi_offset_y);
 
   /*!
   * \brief Converts the dynamic_reconfigure string type into a FlyCapture2::VideoMode.
@@ -227,7 +310,7 @@ private:
   *
   * \return Returns true when the configuration could be applied without modification.
   */
-  bool getVideoModeFromString(std::string &vmode, FlyCapture2::VideoMode &vmode_out, FlyCapture2::Mode &fmt7Mode);
+  // bool getVideoModeFromString(std::string &vmode, FlyCapture2::VideoMode &vmode_out, FlyCapture2::Mode &fmt7Mode);
 
   /*!
   * \brief Converts the dynamic_reconfigure string type into a FlyCapture2::PixelFormat
@@ -239,9 +322,9 @@ private:
   *
   * \return Returns true when the configuration could be applied without modification.
   */
-  bool getFormat7PixelFormatFromString(std::string &sformat, FlyCapture2::PixelFormat &fmt7PixFmt);
+  // bool getFormat7PixelFormatFromString(std::string &sformat, FlyCapture2::PixelFormat &fmt7PixFmt);
 
-  bool setProperty(const FlyCapture2::PropertyType &type, const bool &autoSet,  unsigned int &valueA,  unsigned int &valueB);
+  // bool setProperty(const FlyCapture2::PropertyType &type, const bool &autoSet,  unsigned int &valueA,  unsigned int &valueB);
 
   /*!
   * \brief Generic wrapper for setting properties in FlyCapture2
@@ -256,7 +339,7 @@ private:
   *
   * \return Returns true when the configuration could be applied without modification.
   */
-  bool setProperty(const FlyCapture2::PropertyType &type, const bool &autoSet, double &value);
+  // bool setProperty(const FlyCapture2::PropertyType &type, const bool &autoSet, double &value);
 
   /*!
   * \brief Sets the white balance property
@@ -268,7 +351,8 @@ private:
   *
   * \return Returns true when the configuration could be applied without modification.
   */
-  bool setWhiteBalance(bool& auto_white_balance, uint16_t &blue, uint16_t &red);
+  // NOTE: done in "setNewConfiguration" method
+  // bool setWhiteBalance(bool& auto_white_balance, uint16_t &blue, uint16_t &red);
 
   /*!
   * \brief Gets the current frame rate.
@@ -277,7 +361,7 @@ private:
   *
   * \return The reported frame rate.
   */
-  float getCameraFrameRate();
+  // float getCameraFrameRate();
 
   /*!
   * \brief Will set the external triggering of the camera.
@@ -292,7 +376,8 @@ private:
   *
   * \return Returns true when the configuration could be applied without modification.
   */
-  bool setExternalTrigger(bool &enable, std::string &mode, std::string &source, int32_t &parameter, double &delay, bool &polarityHigh);
+  // NOTE: done in "setNewConfiguration" method
+  // bool setExternalTrigger(bool &enable, std::string &mode, std::string &source, int32_t &parameter, double &delay, bool &polarityHigh);
 
   /*!
   * \brief Will set the external strobe of the camera.
@@ -309,7 +394,8 @@ private:
   *
   * \return Returns true when the configuration could be applied without modification.
   */
-  bool setExternalStrobe(bool &enable, const std::string &dest, double &duration, double &delay, bool &polarityHigh);
+  // NOTE: done in "setNewConfiguration" method
+  // bool setExternalStrobe(bool &enable, const std::string &dest, double &duration, double &delay, bool &polarityHigh);
 
   /*!
   * \brief Will autoconfigure the packet size of the GigECamera with the given GUID.
@@ -319,7 +405,7 @@ private:
   *
   * \param guid the camera to autoconfigure
   */
-  void setupGigEPacketSize(FlyCapture2::PGRGuid & guid);
+  // void setupGigEPacketSize(FlyCapture2::PGRGuid & guid);
 
   /*!
   * \brief Will configure the packet size of the GigECamera with the given GUID to a given value.
@@ -330,7 +416,7 @@ private:
   * \param guid the camera to autoconfigure
   * \param packet_size The packet size value to use.
   */
-  void setupGigEPacketSize(FlyCapture2::PGRGuid & guid, unsigned int packet_size);
+  // void setupGigEPacketSize(FlyCapture2::PGRGuid & guid, unsigned int packet_size);
 
   /*!
   * \brief Will configure the packet delay of the GigECamera with the given GUID to a given value.
@@ -341,17 +427,14 @@ private:
   * \param guid the camera to autoconfigure
   * \param packet_delay The packet delay value to use.
   */
-  void setupGigEPacketDelay(FlyCapture2::PGRGuid & guid, unsigned int packet_delay);
+  // void setupGigEPacketDelay(FlyCapture2::PGRGuid & guid, unsigned int packet_delay);
 
 public:
-  /*!
-  * \brief Handles errors returned by FlyCapture2.
-  *
-  * Checks the status of a FlyCapture2::Error and if there is an error, will throw a runtime_error
-  * \param prefix Message that will prefix the obscure FlyCapture2 error and provide context on the problem.
-  * \param error FlyCapture2::Error that is returned from many FlyCapture functions.
-  */
-  static void handleError(const std::string &prefix, const FlyCapture2::Error &error);
+  bool setProperty(const std::string& property_name, const std::string &entry_name);
+  bool setProperty(const std::string& property_name, const float& value);
+  bool setProperty(const std::string& property_name, const bool& value);
+  bool setProperty(const std::string& property_name, const int& value);
+  bool setMaxInt(const std::string& property_name);
 
 };
 

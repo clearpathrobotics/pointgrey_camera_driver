@@ -1,0 +1,11 @@
+frame_rate: &frame_rate 10.0
+
+# Strobe and trigger Settings
+enable_strobe: true
+enable_trigger: false
+trigger_source: gpio0
+
+strobe_source: gpio3
+
+# Diagnostics configuration:
+desired_freq: *frame_rate

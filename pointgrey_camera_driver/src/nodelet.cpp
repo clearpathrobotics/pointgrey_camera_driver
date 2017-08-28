@@ -90,23 +90,27 @@ private:
   * \param config  camera_library::CameraConfig object passed by reference.  Values will be changed to those the driver is currently using.
   * \param level driver_base reconfiguration level.  See driver_base/SensorLevels.h for more information.
   */
-  void paramCallback(pointgrey_camera_driver::PointGreyConfig &config, uint32_t level)
+
+  void paramCallback(PointGreyCameraConfig &config, uint32_t level)
   {
-    config_ = config;
+    // TODO @tthomas - change config type
+    // config_ = config;
 
     try
     {
       NODELET_DEBUG("Dynamic reconfigure callback with level: %d", level);
-      pg_.setNewConfiguration(config, level);
+      // pg_.setNewConfiguration(config, level);
 
       // Store needed parameters for the metadata message
       gain_ = config.gain;
-      wb_blue_ = config.white_balance_blue;
-      wb_red_ = config.white_balance_red;
+      wb_blue_ = config.balance_ratio_blue;
+      wb_red_ = config.balance_ratio_red;
 
       // Store CameraInfo binning information
       binning_x_ = 1;
       binning_y_ = 1;
+
+      // TODO @tthomas
       /*
       if(config.video_mode == "640x480_mono8" || config.video_mode == "format7_mode1")
       {
@@ -123,7 +127,8 @@ private:
         binning_x_ = 0;
         binning_y_ = 0;
       }
-      */
+
+
 
       // Store CameraInfo RegionOfInterest information
       if(config.video_mode == "format7_mode0" || config.video_mode == "format7_mode1" || config.video_mode == "format7_mode2")
@@ -143,6 +148,7 @@ private:
         roi_width_ = 0;
         do_rectify_ = false; // Set to false if the whole image is captured.
       }
+      */
     }
     catch(std::runtime_error& e)
     {
@@ -160,8 +166,7 @@ private:
     NODELET_DEBUG("Connect callback!");
     boost::mutex::scoped_lock scopedLock(connect_mutex_); // Grab the mutex.  Wait until we're done initializing before letting this function through.
     // Check if we should disconnect (there are 0 subscribers to our data)
-    if( (it_pub_.getNumSubscribers() == 0 && image_pub_.getNumSubscribers() == 0)
-        && pub_->getPublisher().getNumSubscribers() == 0)
+    if(it_pub_.getNumSubscribers() == 0 && pub_->getPublisher().getNumSubscribers() == 0)
     {
       if (pubThread_)
       {
@@ -239,7 +244,7 @@ private:
 
     std::string camera_serial_path;
     pnh.param<std::string>("camera_serial_path", camera_serial_path, "");
-    NODELET_INFO("Camera serial path %s", camera_serial_path.c_str());
+    NODELET_DEBUG("Camera serial path %s", camera_serial_path.c_str());
     // If serial has been provided directly as a param, ignore the path
     // to read in the serial from.
     while (serial == 0 && !camera_serial_path.empty())
@@ -252,7 +257,7 @@ private:
       }
     }
 
-    NODELET_INFO("Using camera serial %d", serial);
+    NODELET_DEBUG("Using camera serial %d", serial);
 
     pg_.setDesiredCamera((uint32_t)serial);
 
@@ -261,25 +266,24 @@ private:
     pnh.param<bool>("auto_packet_size", auto_packet_size_, true);
     pnh.param<int>("packet_delay", packet_delay_, 4000);
 
-    // Set GigE parameters:
-    pg_.setGigEParameters(auto_packet_size_, packet_size_, packet_delay_);
+    // TODO: @tthomas Set GigE parameters:
+    // pg_.setGigEParameters(auto_packet_size_, packet_size_, packet_delay_);
 
     // Get the location of our camera config yaml
     std::string camera_info_url;
     pnh.param<std::string>("camera_info_url", camera_info_url, "");
-    pnh.param<bool>("publish_camera_info", publish_camera_info_, "true");
     // Get the desired frame_id, set to 'camera' if not found
     pnh.param<std::string>("frame_id", frame_id_, "camera");
-
-
     // Do not call the connectCb function until after we are done initializing.
     boost::mutex::scoped_lock scopedLock(connect_mutex_);
 
     // Start up the dynamic_reconfigure service, note that this needs to stick around after this function ends
-    srv_ = boost::make_shared <dynamic_reconfigure::Server<pointgrey_camera_driver::PointGreyConfig> > (pnh);
-    dynamic_reconfigure::Server<pointgrey_camera_driver::PointGreyConfig>::CallbackType f =
-      boost::bind(&pointgrey_camera_driver::PointGreyCameraNodelet::paramCallback, this, _1, _2);
-    srv_->setCallback(f);
+    // TODO @tthomas PointGreyCameraConfig -> pointgrey_camera_driver::PointGreyConfig
+    // srv_ = boost::make_shared <dynamic_reconfigure::Server<pointgrey_camera_driver::PointGreyConfig> > (pnh);
+    // dynamic_reconfigure::Server<pointgrey_camera_driver::PointGreyConfig>::CallbackType f =
+    //   boost::bind(&pointgrey_camera_driver::PointGreyCameraNodelet::paramCallback, this, _1, _2);
+
+    // srv_->setCallback(f);
 
     // Start the camera info manager and attempt to load any configurations
     std::stringstream cinfo_name;
@@ -289,22 +293,14 @@ private:
     // Publish topics using ImageTransport through camera_info_manager (gives cool things like compression)
     it_.reset(new image_transport::ImageTransport(nh));
     image_transport::SubscriberStatusCallback cb = boost::bind(&PointGreyCameraNodelet::connectCb, this);
-
-    if(publish_camera_info_)
-    {
-      it_pub_ = it_->advertiseCamera("image_raw", 5, cb, cb);
-    }
-    else
-    {
-      image_pub_ = it_->advertise("image_raw", 5, cb, cb);
-    }
+    it_pub_ = it_->advertiseCamera("image_raw", 5, cb, cb);
 
     // Set up diagnostics
     updater_.setHardwareID("pointgrey_camera " + cinfo_name.str());
 
     // Set up a diagnosed publisher
     double desired_freq;
-    pnh.param<double>("desired_freq", desired_freq, 7.0);
+    pnh.param<double>("desired_freq", desired_freq, 30.0);
     pnh.param<double>("min_freq", min_freq_, desired_freq);
     pnh.param<double>("max_freq", max_freq_, desired_freq);
     double freq_tolerance; // Tolerance before stating error on publish frequency, fractional percent of desired frequencies.
@@ -320,6 +316,8 @@ private:
                updater_,
                diagnostic_updater::FrequencyStatusParam(&min_freq_, &max_freq_, freq_tolerance, window_size),
                diagnostic_updater::TimeStampStatusParam(min_acceptable, max_acceptable)));
+
+
   }
 
   /**
@@ -360,6 +358,10 @@ private:
   */
   void devicePoll()
   {
+    ROS_INFO("\033[94m devicePoll");
+
+    int result = 0;
+
     enum State
     {
         NONE
@@ -395,7 +397,7 @@ private:
           {
             NODELET_DEBUG("Stopping camera.");
             pg_.stop();
-            NODELET_INFO("Stopped camera.");
+            NODELET_DEBUG("Stopped camera.");
 
             state = STOPPED;
           }
@@ -414,7 +416,7 @@ private:
           {
             NODELET_DEBUG("Disconnecting from camera.");
             pg_.disconnect();
-            NODELET_INFO("Disconnected from camera.");
+            NODELET_DEBUG("Disconnected from camera.");
 
             state = DISCONNECTED;
           }
@@ -431,11 +433,14 @@ private:
           try
           {
             NODELET_DEBUG("Connecting to camera.");
-            pg_.connect();
-            NODELET_INFO("Connected to camera.");
+
+            result = pg_.connect();
+
+            NODELET_DEBUG("Connected to camera.");
 
             // Set last configuration, forcing the reconfigure level to stop
-            pg_.setNewConfiguration(config_, PointGreyCamera::LEVEL_RECONFIGURE_STOP);
+            // TODO: @tthomas
+            // pg_.setNewConfiguration(config_, PointGreyCamera::LEVEL_RECONFIGURE_STOP);
 
             // Set the timeout for grabbing images.
             try
@@ -444,7 +449,8 @@ private:
               getMTPrivateNodeHandle().param("timeout", timeout, 1.0);
 
               NODELET_DEBUG("Setting timeout to: %f.", timeout);
-              pg_.setTimeout(timeout);
+              // TODO: @tthomas
+              // pg_.setTimeout(timeout);
             }
             catch(std::runtime_error& e)
             {
@@ -473,8 +479,8 @@ private:
           {
             NODELET_DEBUG("Starting camera.");
             pg_.start();
-            NODELET_INFO("Started camera.");
-
+            NODELET_DEBUG("Started camera.");
+            NODELET_DEBUG("Attention: if nothing subscribes to the camera topic, the camera_info is not published on the correspondent topic.");
             state = STARTED;
           }
           catch(std::runtime_error& e)
@@ -490,8 +496,8 @@ private:
           {
             wfov_camera_msgs::WFOVImagePtr wfov_image(new wfov_camera_msgs::WFOVImage);
             // Get the image from the camera library
-            NODELET_DEBUG("Starting a new grab from camera.");
-            pg_.grabImage(wfov_image->image, frame_id_);
+            NODELET_DEBUG("Starting a new grab from camera with serial {%d}.", pg_.getSerial());
+            result = pg_.grabImage(wfov_image->image, frame_id_);
 
             // Set other values
             wfov_image->header.frame_id = frame_id_;
@@ -500,7 +506,7 @@ private:
             wfov_image->white_balance_blue = wb_blue_;
             wfov_image->white_balance_red = wb_red_;
 
-            wfov_image->temperature = pg_.getCameraTemperature();
+            // wfov_image->temperature = pg_.getCameraTemperature();
 
             ros::Time time = ros::Time::now();
             wfov_image->header.stamp = time;
@@ -525,27 +531,17 @@ private:
             pub_->publish(wfov_image);
 
             // Publish the message using standard image transport
-            if(publish_camera_info_)
+            if(it_pub_.getNumSubscribers() > 0)
             {
-              if(it_pub_.getNumSubscribers() > 0)
-              {
-                sensor_msgs::ImagePtr image(new sensor_msgs::Image(wfov_image->image));
-                it_pub_.publish(image, ci_);
-              }
-            }
-            else
-            {
-              if(image_pub_.getNumSubscribers() > 0)
-              {
-                sensor_msgs::ImagePtr image(new sensor_msgs::Image(wfov_image->image));
-                image_pub_.publish(image);
-              }
+              sensor_msgs::ImagePtr image(new sensor_msgs::Image(wfov_image->image));
+              it_pub_.publish(image, ci_);
             }
           }
           catch(CameraTimeoutException& e)
           {
             NODELET_WARN("%s", e.what());
           }
+
           catch(std::runtime_error& e)
           {
             NODELET_ERROR("%s", e.what());
@@ -570,10 +566,14 @@ private:
     {
       NODELET_DEBUG("Gain callback:  Setting gain to %f and white balances to %u, %u", msg.gain, msg.white_balance_blue, msg.white_balance_red);
       gain_ = msg.gain;
-      pg_.setGain(gain_);
+
+      float gain = static_cast<float>(gain_);
+      pg_.setGain(gain);
       wb_blue_ = msg.white_balance_blue;
       wb_red_ = msg.white_balance_red;
-      pg_.setBRWhiteBalance(false, wb_blue_, wb_red_);
+
+      // TODO: @tthomas
+      // pg_.setBRWhiteBalance(false, wb_blue_, wb_red_);
     }
     catch(std::runtime_error& e)
     {
@@ -581,13 +581,13 @@ private:
     }
   }
 
+  /* Class Fields */
   boost::shared_ptr<dynamic_reconfigure::Server<pointgrey_camera_driver::PointGreyConfig> > srv_; ///< Needed to initialize and keep the dynamic_reconfigure::Server in scope.
   boost::shared_ptr<image_transport::ImageTransport> it_; ///< Needed to initialize and keep the ImageTransport in scope.
   boost::shared_ptr<camera_info_manager::CameraInfoManager> cinfo_; ///< Needed to initialize and keep the CameraInfoManager in scope.
   image_transport::CameraPublisher it_pub_; ///< CameraInfoManager ROS publisher
   boost::shared_ptr<diagnostic_updater::DiagnosedPublisher<wfov_camera_msgs::WFOVImage> > pub_; ///< Diagnosed publisher, has to be a pointer because of constructor requirements
   ros::Subscriber sub_; ///< Subscriber for gain and white balance changes.
-  image_transport::Publisher image_pub_;
 
   boost::mutex connect_mutex_;
 
@@ -621,11 +621,8 @@ private:
   /// GigE packet delay:
   int packet_delay_;
 
-  // Flag to toggl publishing camera info.
-  bool publish_camera_info_;
-
   /// Configuration:
-  pointgrey_camera_driver::PointGreyConfig config_;
+  // pointgrey_camera_driver::PointGreyConfig config_;
 };
 
 PLUGINLIB_DECLARE_CLASS(pointgrey_camera_driver, PointGreyCameraNodelet, pointgrey_camera_driver::PointGreyCameraNodelet, nodelet::Nodelet);  // Needed for Nodelet declaration

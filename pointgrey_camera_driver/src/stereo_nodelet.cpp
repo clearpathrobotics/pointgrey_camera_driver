@@ -73,64 +73,64 @@ private:
   * \param config  camera_library::CameraConfig object passed by reference.  Values will be changed to those the driver is currently using.
   * \param level driver_base reconfiguration level.  See driver_base/SensorLevels.h for more information.
   */
-  void paramCallback(pointgrey_camera_driver::PointGreyConfig &config, uint32_t level)
-  {
+  // void paramCallback(pointgrey_camera_driver::PointGreyConfig &config, uint32_t level)
+  // {
 
-    // Stereo is only active in this mode (16 bits, 8 for each image)
-    config.video_mode = "format7_mode3";
+  //   // Stereo is only active in this mode (16 bits, 8 for each image)
+  //   config.video_mode = "format7_mode3";
 
-    try
-    {
-      NODELET_DEBUG("Dynamic reconfigure callback with level: %d", level);
-      pg_.setNewConfiguration(config, level);
+  //   try
+  //   {
+  //     NODELET_DEBUG("Dynamic reconfigure callback with level: %d", level);
+  //     pg_.setNewConfiguration(config, level);
 
-      // Store needed parameters for the metadata message
-      gain_ = config.gain;
-      wb_blue_ = config.white_balance_blue;
-      wb_red_ = config.white_balance_red;
+  //     // Store needed parameters for the metadata message
+  //     gain_ = config.gain;
+  //     wb_blue_ = config.white_balance_blue;
+  //     wb_red_ = config.white_balance_red;
 
 
-      // Store CameraInfo binning information
-      if(config.video_mode == "640x480_mono8" || config.video_mode == "format7_mode1")
-      {
-        binning_x_ = 2;
-        binning_y_ = 2;
-      }
-      else if(config.video_mode == "format7_mode2")
-      {
-        binning_x_ = 0;
-        binning_y_ = 2;
-      }
-      else
-      {
-        binning_x_ = 0;
-        binning_y_ = 0;
-      }
+  //     // Store CameraInfo binning information
+  //     if(config.video_mode == "640x480_mono8" || config.video_mode == "format7_mode1")
+  //     {
+  //       binning_x_ = 2;
+  //       binning_y_ = 2;
+  //     }
+  //     else if(config.video_mode == "format7_mode2")
+  //     {
+  //       binning_x_ = 0;
+  //       binning_y_ = 2;
+  //     }
+  //     else
+  //     {
+  //       binning_x_ = 0;
+  //       binning_y_ = 0;
+  //     }
 
-      // Store CameraInfo RegionOfInterest information
-      if(config.video_mode == "format7_mode0" || config.video_mode == "format7_mode1" || config.video_mode == "format7_mode2")
-      {
-        roi_x_offset_ = config.format7_x_offset;
-        roi_y_offset_ = config.format7_y_offset;
-        roi_width_ = config.format7_roi_width;
-        roi_height_ = config.format7_roi_height;
-        do_rectify_ = true; // Set to true if an ROI is used.
-      }
-      else
-      {
-        // Zeros mean the full resolution was captured.
-        roi_x_offset_ = 0;
-        roi_y_offset_ = 0;
-        roi_height_ = 0;
-        roi_width_ = 0;
-        do_rectify_ = false; // Set to false if the whole image is captured.
-      }
-    }
-    catch(std::runtime_error& e)
-    {
-      NODELET_ERROR("Reconfigure Callback failed with error: %s", e.what());
-    }
-  }
+  //     // Store CameraInfo RegionOfInterest information
+  //     if(config.video_mode == "format7_mode0" || config.video_mode == "format7_mode1" || config.video_mode == "format7_mode2")
+  //     {
+  //       roi_x_offset_ = config.format7_x_offset;
+  //       roi_y_offset_ = config.format7_y_offset;
+  //       roi_width_ = config.format7_roi_width;
+  //       roi_height_ = config.format7_roi_height;
+  //       do_rectify_ = true; // Set to true if an ROI is used.
+  //     }
+  //     else
+  //     {
+  //       // Zeros mean the full resolution was captured.
+  //       roi_x_offset_ = 0;
+  //       roi_y_offset_ = 0;
+  //       roi_height_ = 0;
+  //       roi_width_ = 0;
+  //       do_rectify_ = false; // Set to false if the whole image is captured.
+  //     }
+  //   }
+  //   catch(std::runtime_error& e)
+  //   {
+  //     NODELET_ERROR("Reconfigure Callback failed with error: %s", e.what());
+  //   }
+  // }
 
   /*!
   * \brief Serves as a psuedo constructor for nodelets.
@@ -145,6 +145,7 @@ private:
     std::string firstcam;
     pnh.param<std::string>("first_namespace", firstcam, "left");
     ros::NodeHandle lnh(getMTNodeHandle(), firstcam);
+
     std::string secondcam;
     pnh.param<std::string>("second_namespace", secondcam, "right");
     ros::NodeHandle rnh(getMTNodeHandle(), secondcam);
@@ -171,7 +172,7 @@ private:
     {
       try
       {
-        NODELET_INFO("Connecting to camera serial: %u", serial);
+        NODELET_INFO("\033[96mConnecting to camera serial: %u", serial);
         pg_.setDesiredCamera(serial);
         NODELET_DEBUG("Actually connecting to camera.");
         pg_.connect();
