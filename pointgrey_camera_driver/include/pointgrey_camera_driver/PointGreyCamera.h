@@ -53,43 +53,7 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
 #include "SpinGenApi/SpinnakerGenApi.h"
 
 
-/* Struct for Point Grey Camera Configs */
-struct PointGreyCameraConfig
-{
-  bool is_left;
-  int binning_vertical;
-  int decimation_vertical;
-  std::string pixel_format;
-  std::string video_mode;
-  std::string line_selector;
-  std::string line_mode;
-  std::string line_source;
-  std::string trigger_source;
-  std::string trigger_selector;
-  std::string trigger_activation;
-  std::string acquisition_frame_rate_auto;
-  bool acquisition_frame_rate_enabled;
-  float acquisition_frame_rate;
-  std::string exposure_auto;
-  float exposure_time;
-  float auto_exposure_exposure_time_upper_limit;
-  std::string gain_auto;
-  float gain;
-  float auto_gain_lower_limit;
-  float auto_gain_upper_limit;
-  std::string balance_white_auto;
-  float balance_ratio_red;
-  float balance_ratio_blue;
-  float black_level;
-  bool gamma_enabled;
-  bool hue_enabled;
-  bool saturation_enabled;
-  float gamma;
-  float hue;
-  float saturation;
-  bool flip_left;
-  bool flip_right;
-};
+
 
 class PointGreyCamera
 {
@@ -111,7 +75,7 @@ public:
   *
   * \return Returns true when the configuration could be applied without modification.
   */
-  bool setNewConfiguration(PointGreyCameraConfig &config, const uint32_t &level);
+  bool setNewConfiguration(pointgrey_camera_driver::PointGreyConfig &config, const uint32_t &level);
 
   /** Parameters that need a sensor to be stopped completely when changed. */
   static const uint8_t LEVEL_RECONFIGURE_CLOSE = 3;
@@ -283,63 +247,10 @@ private:
   * \param videoMode string of desired video mode, will be changed if unsupported.
   */
   // void setVideoMode(FlyCapture2::VideoMode &videoMode);
-  void setVideoMode(const std::string& videoMode);
+  bool setVideoMode(const std::string& videoMode);
 
-  /*!
-  * \brief Changes the camera into Format7 mode with the associated parameters.
-  *
-  * This function will stop the camera, change the video mode into Format 7, and then restart the camera.
-  * \param fmt7Mode Flycapture2::Mode, desired Format 7 mode.
-  * \param fmt7PixFmt FlyCapture2::PixelFormat, desired Format 7 pixel format.
-  * \param roi_width width of the region of interest for Format 7 in pixels, will be changed if unsupported.  '0' is full width.
-  * \param roi_height height of the region of interest for Format 7 in pixels, will be changed if unsupported. '0' is full height
-  * \param roi_offset_x offset in pixels from the left side of the image for the region of interest for Format 7, will be changed if unsupported.
-  * \param roi_offset_y offset in pixels from the top of the image for the region of interest for Format 7, will be changed if unsupported.
-  *
-  * \return Returns true when the configuration could be applied without modification.
-  */
-  // bool setFormat7(FlyCapture2::Mode &fmt7Mode, FlyCapture2::PixelFormat &fmt7PixFmt, uint16_t &roi_width, uint16_t &roi_height, uint16_t &roi_offset_x, uint16_t &roi_offset_y);
+  bool setImageControlFormats(pointgrey_camera_driver::PointGreyConfig &config);
 
-  /*!
-  * \brief Converts the dynamic_reconfigure string type into a FlyCapture2::VideoMode.
-  *
-  * This function will convert the string input from dynamic_reconfigure into the proper datatype for use with FlyCapture enum.
-  * \param vmode input video mode, will be changed if unsupported.
-  * \param vmode_out FlyCapture2::VideoMode, will be changed to either the corresponding type as vmode, or to the most compatible type.
-  * \param fmt7Mode will be set to the appropriate FlyCapture2::Mode if vmode is a format 7 mode.upacket, upacket,
-  *
-  * \return Returns true when the configuration could be applied without modification.
-  */
-  // bool getVideoModeFromString(std::string &vmode, FlyCapture2::VideoMode &vmode_out, FlyCapture2::Mode &fmt7Mode);
-
-  /*!
-  * \brief Converts the dynamic_reconfigure string type into a FlyCapture2::PixelFormat
-  *
-  * This function will convert the string input from dynamic_reconfigure into the proper datatype for use with FlyCapture enum.
-  * \param fmt7Mode input video mode, needed to know which PixelFormats are valid.
-  * \param sformat dynamic_reconfigure Format 7 color coding, will be changed if unsupported.
-  * \param fmt7PixFmt FlyCapture2::PixelFormat, will be set to the appropriate output type.
-  *
-  * \return Returns true when the configuration could be applied without modification.
-  */
-  // bool getFormat7PixelFormatFromString(std::string &sformat, FlyCapture2::PixelFormat &fmt7PixFmt);
-
-  // bool setProperty(const FlyCapture2::PropertyType &type, const bool &autoSet,  unsigned int &valueA,  unsigned int &valueB);
-
-  /*!
-  * \brief Generic wrapper for setting properties in FlyCapture2
-  *
-  * This function will set the appropriate type and if desired, will allow the camera to change its own value.  If value is outside the range of min and max,
-  * it will be set to either extreme.
-  * \param type FlyCapture2::PropertyType to set.  Examples: FlyCapture2::GAIN FlyCapture2::SHUTTER FlyCapture2::BRIGHTNESS
-  * \param autoSet whether or not to allow the camera to automatically adjust values.  Ex: auto exposure, auto shutter.  Not supported for all types.
-  * \param value Desired absolute value to be set in appropriate units.  Will be changed if this value is not supported.
-  * \param min Absolute mininum value that this type can be set to.
-  * \param max Absolute maximum value that this type can be set to.
-  *
-  * \return Returns true when the configuration could be applied without modification.
-  */
-  // bool setProperty(const FlyCapture2::PropertyType &type, const bool &autoSet, double &value);
 
   /*!
   * \brief Sets the white balance property

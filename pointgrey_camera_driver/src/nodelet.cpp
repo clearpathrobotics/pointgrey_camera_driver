@@ -28,6 +28,14 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
    @attention Carnegie Mellon University
 */
 
+
+/**
+   @file nodelet.cpp
+   @author Teyvonia Thomas
+   @date August 28, 2017
+   @brief ROS nodelet for the Point Grey Chameleon Camera - Updated to use Spinnaker driver insteady of Flycapture
+*/
+
 // ROS and associated nodelet interface and PLUGINLIB declaration header
 #include "ros/ros.h"
 #include <pluginlib/class_list_macros.h>
@@ -91,36 +99,36 @@ private:
   * \param level driver_base reconfiguration level.  See driver_base/SensorLevels.h for more information.
   */
 
-  void paramCallback(PointGreyCameraConfig &config, uint32_t level)
+  void paramCallback(pointgrey_camera_driver::PointGreyConfig &config, uint32_t level)
   {
-    // TODO @tthomas - change config type
-    // config_ = config;
+    config_ = config;
 
     try
     {
       NODELET_DEBUG("Dynamic reconfigure callback with level: %d", level);
-      // pg_.setNewConfiguration(config, level);
+      pg_.setNewConfiguration(config, level);
 
       // Store needed parameters for the metadata message
       gain_ = config.gain;
-      wb_blue_ = config.balance_ratio_blue;
-      wb_red_ = config.balance_ratio_red;
+      wb_blue_ = config.white_balance_blue_ratio;
+      wb_red_ = config.white_balance_red_ratio;
 
       // Store CameraInfo binning information
-      binning_x_ = 1;
-      binning_y_ = 1;
-
-      // TODO @tthomas
-      /*
-      if(config.video_mode == "640x480_mono8" || config.video_mode == "format7_mode1")
+      if (config.video_mode.compare("1280x960") == 0)
+      {
+        binning_x_ = 1;
+        binning_y_ = 1;
+      }
+      else if (config.video_mode.compare("640x480_pixel_aggregation") == 0 ||
+               config.video_mode.compare("640x480_pixel_decimation") == 0)
       {
         binning_x_ = 2;
         binning_y_ = 2;
       }
-      else if(config.video_mode == "format7_mode2")
+      else if (config.video_mode.compare("320x240") == 0)
       {
-        binning_x_ = 0;
-        binning_y_ = 2;
+        binning_x_ = 4;
+        binning_y_ = 4;
       }
       else
       {
@@ -129,14 +137,15 @@ private:
       }
 
 
-
       // Store CameraInfo RegionOfInterest information
-      if(config.video_mode == "format7_mode0" || config.video_mode == "format7_mode1" || config.video_mode == "format7_mode2")
+      if(config.video_mode.compare("1280x960") == 0 ||
+         config.video_mode.compare("640x480_pixel_aggregation") == 0 ||
+         config.video_mode.compare("640x480_pixel_decimation") == 0)
       {
-        roi_x_offset_ = config.format7_x_offset;
-        roi_y_offset_ = config.format7_y_offset;
-        roi_width_ = config.format7_roi_width;
-        roi_height_ = config.format7_roi_height;
+        roi_x_offset_ = config.image_format_x_offset;
+        roi_y_offset_ = config.image_format_y_offset;
+        roi_width_ = config.image_format_roi_width;
+        roi_height_ = config.image_format_roi_height;
         do_rectify_ = true; // Set to true if an ROI is used.
       }
       else
@@ -148,7 +157,7 @@ private:
         roi_width_ = 0;
         do_rectify_ = false; // Set to false if the whole image is captured.
       }
-      */
+
     }
     catch(std::runtime_error& e)
     {
@@ -439,8 +448,7 @@ private:
             NODELET_DEBUG("Connected to camera.");
 
             // Set last configuration, forcing the reconfigure level to stop
-            // TODO: @tthomas
-            // pg_.setNewConfiguration(config_, PointGreyCamera::LEVEL_RECONFIGURE_STOP);
+            pg_.setNewConfiguration(config_, PointGreyCamera::LEVEL_RECONFIGURE_STOP);
 
             // Set the timeout for grabbing images.
             try
@@ -622,7 +630,7 @@ private:
   int packet_delay_;
 
   /// Configuration:
-  // pointgrey_camera_driver::PointGreyConfig config_;
+  pointgrey_camera_driver::PointGreyConfig config_;
 };
 
 PLUGINLIB_DECLARE_CLASS(pointgrey_camera_driver, PointGreyCameraNodelet, pointgrey_camera_driver::PointGreyCameraNodelet, nodelet::Nodelet);  // Needed for Nodelet declaration

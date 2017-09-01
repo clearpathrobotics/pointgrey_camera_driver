@@ -53,7 +53,7 @@ PointGreyCamera::~PointGreyCamera()
 }
 
 
-bool PointGreyCamera::setNewConfiguration(PointGreyCameraConfig &config, const uint32_t &level)
+bool PointGreyCamera::setNewConfiguration(pointgrey_camera_driver::PointGreyConfig &config, const uint32_t &level)
 {
   // Check if camera is connected
   if(!pCam_)
@@ -68,77 +68,107 @@ bool PointGreyCamera::setNewConfiguration(PointGreyCameraConfig &config, const u
   // return true if we can set values as desired.
   bool retVal = true;
 
-  PointGreyCamera::setVideoMode(config.video_mode);
+  // Set Video Mode, Image and Pixel formats
+  retVal = PointGreyCamera::setVideoMode(config.video_mode);
+  retVal = PointGreyCamera::setImageControlFormats(config);
 
-  // TODO: @tthomas - set format 7 (image control params)
 
   // Set frame rate
-  retVal = setProperty("AcquisitionFrameRateAuto", config.acquisition_frame_rate_auto);
-  retVal = setProperty("AcquisitionFrameRateEnabled", config.acquisition_frame_rate_enabled);
-  retVal = setProperty("AcquisitionFrameRate", config.acquisition_frame_rate);
+  retVal = setProperty("AcquisitionFrameRateEnable", config.acquisition_frame_rate_enable);
+
+
+  // retVal = setProperty("AcquisitionFrameRate", config.acquisition_frame_rate);
+  // TODO @tthomas: streamline double& to float& conversions
+  float temp_frame_rate = config.acquisition_frame_rate;
+  retVal = setProperty("AcquisitionFrameRate", temp_frame_rate);
+  retVal = setProperty("FrameRateAuto", config.frame_rate_auto);
 
 
   // Set auto exposure
-  retVal = setProperty("ExposureMode", std::string("Timed"));
+  retVal = setProperty("ExposureMode", config.exposure_mode);
   retVal = setProperty("ExposureAuto", config.exposure_auto);
 
 
   // TODO: Set sharpness
-
+  if (config.sharpening_enable)
+  {
+    retVal = setProperty("SharpeningAuto", config.auto_sharpness);
+    // retVal = setProperty("Sharpening", config.sharpness);
+    float temp_sharpness = config.sharpness;
+    float temp_sharpening_threshold = config.sharpening_threshold;
+    retVal = setProperty("Sharpening", temp_sharpness);
+    retVal = setProperty("SharpeningThreshold", temp_sharpening_threshold);
+  }
 
   // Set saturation
-  if (config.saturation_enabled)
+  if (config.saturation_enable)
   {
-    retVal = setProperty("SaturationEnabled", config.saturation_enabled);
-    retVal = setProperty("Saturation", config.saturation);
+    retVal = setProperty("SaturationEnable", config.saturation_enable);
+    float temp_saturation = config.saturation;
+    retVal = setProperty("Saturation", temp_saturation);
   }
 
 
   // Set shutter time/speed
   if (config.exposure_auto.compare(std::string("Off")) == 0)
   {
-    retVal = setProperty("ExposureTime", config.exposure_time);
+    float temp_exposure_time = config.exposure_time;
+    retVal = setProperty("ExposureTime", temp_exposure_time);
   }
-  retVal = setProperty("AutoExposureTimeUpperLimit", config.auto_exposure_exposure_time_upper_limit);
+
+  float temp_auto_exposure_exposure_time_upper_limit= config.auto_exposure_time_upper_limit;
+  retVal = setProperty("AutoExposureTimeUpperLimit", temp_auto_exposure_exposure_time_upper_limit);
 
 
-  // TODO: Set gain
+  // Set gain
+  retVal = setProperty("GainSelector", config.gain_selector);
+  retVal = setProperty("GainAuto", config.auto_gain);
 
-  // TODO: Set pan
-
-  // TODO: Set tilt
-
+  float temp_gain = config.gain;
+  retVal = setProperty("Gain", temp_gain);
 
   // Set brightness
-  retVal = setProperty("BlackLevel", config.black_level);
+  float temp_brightness = config.brightness;
+  retVal = setProperty("BlackLevel", temp_brightness);
 
   // Set gamma
-  if (config.gamma_enabled)
+  if (config.gamma_enable)
   {
-    retVal = setProperty("GammaEnabled", config.gamma_enabled);
-    retVal = setProperty("Gamma", config.gamma);
+    retVal = setProperty("GammaEnable", config.gamma_enable);
+
+    float temp_gamma = config.gamma;
+    retVal = setProperty("Gamma", temp_gamma);
   }
 
   // Set white balance
-  retVal = setProperty("BalanceWhiteAuto", config.balance_white_auto);
+  retVal = setProperty("BalanceWhiteAuto", config.auto_white_balance);
   retVal = setProperty("BalanceRatioSelector", "Blue");
-  retVal = setProperty("BalanceRatio", config.balance_ratio_blue);
+
+  float temp_white_balance_blue_ratio = config.white_balance_blue_ratio;
+  retVal = setProperty("BalanceRatio", temp_white_balance_blue_ratio);
+
   retVal = setProperty("BalanceRatioSelector", "Red");
-  retVal = setProperty("BalanceRatio", config.balance_ratio_red);
+  float temp_white_balance_red_ratio = config.white_balance_red_ratio;
+  retVal = setProperty("BalanceRatio", temp_white_balance_red_ratio);
 
 
   // Set Trigger and Strobe
-  if (config.is_left)
+  if (config.is_left_camera)
   {
     // Set strobe (LEFT CAMERA ONLY)
     // and AcquisitionFrameRate (only if Trigger Mode is Off)
+    retVal = setProperty("TriggerSelector", config.trigger_selector);
+    // retVal = setProperty("LineMode", config.line_mode);
+    retVal = setProperty("TriggerSource", config.trigger_source);
+    retVal = setProperty("TriggerMode", std::string("Off"));  // config.enable_trigger
+
+    /*
+    // Strobe Settings
     retVal = setProperty("LineSelector", config.line_selector);
     retVal = setProperty("LineMode", config.line_mode);
     retVal = setProperty("LineSource", config.line_source);
     retVal = setProperty("TriggerMode", std::string("Off"));
-    retVal = setProperty("AcquisitionFrameRateAuto", config.acquisition_frame_rate_auto);
-    retVal = setProperty("AcquisitionFrameRateEnabled", config.acquisition_frame_rate_enabled);
-    retVal = setProperty("AcquisitionFrameRate", config.acquisition_frame_rate);
+    */
   }
   else
   {
@@ -148,7 +178,7 @@ bool PointGreyCamera::setNewConfiguration(PointGreyCameraConfig &config, const u
     retVal = setProperty("TriggerSource", config.trigger_source);
     retVal = setProperty("TriggerMode", std::string("On"));
     retVal = setProperty("TriggerSelector", config.trigger_selector);
-    retVal = setProperty("TriggerActivation", config.trigger_activation);
+    retVal = setProperty("TriggerActivation", config.trigger_activation_mode);
   }
 
   return retVal;
@@ -168,31 +198,64 @@ void PointGreyCamera::setGain(float& gain)
 
 
 
-void PointGreyCamera::setVideoMode(const std::string& videoMode)
+bool PointGreyCamera::setVideoMode(const std::string& videoMode)
 {
-  setProperty("VideoMode", videoMode);
+  // return true if we can set the video mode as desired.
+  bool retVal = true;
+
+  if (videoMode.compare("1280x960") == 0)
+  {
+    retVal = setProperty("VideoMode", "Mode0");
+  }
+  else if (videoMode.compare("640x480_pixel_aggregation") == 0)
+  {
+    retVal = setProperty("VideoMode", "Mode1");
+  }
+  else if (videoMode.compare("640x480_pixel_decimation") == 0)
+  {
+    retVal = setProperty("VideoMode", "Mode4");
+  }
+  else if (videoMode.compare("320x240") == 0)
+  {
+    retVal = setProperty("VideoMode", "Mode5");
+  }
+  else
+  {
+    ROS_ERROR("Video Mode Unknown!");
+    retVal = false;
+  }
+
+  return retVal;
+
 }
+
+// Image Size and Pixel Format
+bool PointGreyCamera::setImageControlFormats(pointgrey_camera_driver::PointGreyConfig &config)
+{
+
+  // return true if we can set values as desired.
+  bool retVal = true;
+
+  // Apply minimum to offset X
+  retVal = setProperty("OffsetX", config.image_format_x_offset);
+  // Apply minimum to offset Y
+  retVal = setProperty("OffsetY", config.image_format_y_offset);
+
+  // Set maximum width
+  retVal = setProperty("Width", config.image_format_roi_width);
+  retVal = setProperty("Height", config.image_format_roi_height);
+
+  // Set Pixel Format
+  retVal = setProperty("PixelFormat", config.image_format_color_coding);
+
+  return retVal;
+}
+
+
 
 
 
 /*
-
-TODO: @tthomas - implement the following
-bool PointGreyCamera::setFormat7(FlyCapture2::Mode &fmt7Mode, FlyCapture2::PixelFormat &fmt7PixFmt, uint16_t &roi_width, uint16_t &roi_height, uint16_t &roi_offset_x, uint16_t &roi_offset_y)
-{
-  return retVal;
-}
-
-bool PointGreyCamera::getVideoModeFromString(std::string &vmode, FlyCapture2::VideoMode &vmode_out, FlyCapture2::Mode &fmt7Mode)
-{
-  return retVal;
-}
-
-bool PointGreyCamera::getFormat7PixelFormatFromString(std::string &sformat, FlyCapture2::PixelFormat &fmt7PixFmt)
-{
-  return retVal;
-}
-
 
 void PointGreyCamera::setTimeout(const double &timeout)
 {
