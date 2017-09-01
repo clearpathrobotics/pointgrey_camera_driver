@@ -89,7 +89,7 @@ bool PointGreyCamera::setNewConfiguration(pointgrey_camera_driver::PointGreyConf
   retVal = setProperty("ExposureAuto", config.exposure_auto);
 
 
-  // TODO: Set sharpness
+  // Set sharpness
   if (config.sharpening_enable)
   {
     retVal = setProperty("SharpeningAuto", config.auto_sharpness);
