@@ -1,11 +1,16 @@
+is_left_camera: false
+
 frame_rate: &frame_rate 10.0
 
 # Strobe and trigger Settings
-enable_strobe: false
+trigger_selector: "FrameStart"
+trigger_source: "Line3"
+trigger_activation_mode: "FallingEdge"
+# enable_strobe: false
 enable_trigger: true
-trigger_source: gpio3
+# trigger_source: gpio3
 
-strobe_source: gpio1
+# strobe_source: gpio1
 
 # Diagnostics configuration:
 desired_freq: *frame_rate

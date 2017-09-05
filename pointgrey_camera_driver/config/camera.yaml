@@ -1,63 +1,65 @@
 # Video mode:
-# Format0_Mode5 =  640x480, mono8
-# Format0_Mode6 =  640x480, mono16
-# Format2_Mode1 = 1280x960, bayer8
-# Format2_Mode2 = 1280x960, mono8
-# Format2_Mode6 = 1280x960, mono16
-# Format7_Mode0 =  format7, mode0
-# Format7_Mode1 =  format7, mode1
-# Format7_Mode2 =  format7, mode2
-# Format7_Mode3 =  format7, mode3
-video_mode: 'format7_mode0'
-# Format7 color coding:
-# Mono8  = mono8
-# Mono16 = mono16
-# Raw8   = raw8
-# Raw16  = raw16
-format7_color_coding: 'raw8'
-format7_roi_height: 0
-format7_roi_width: 0
-format7_x_offset: 0
-format7_y_offset: 0
+video_mode: "1280x960"
+
+# Image Format Control parameters
+image_format_color_coding: 'BayerGB8'
+image_format_roi_width: 1288
+image_format_roi_height: 964
+image_format_x_offset: 0
+image_format_y_offset: 0
 # Frames per second:
 # @todo At higher frequencies it seems there's less blur, but we have to test by
 # saving images while the robot is moving in compare the saved images.
-frame_rate: &frame_rate 30.0
+acquisition_frame_rate: &frame_rate 30.0
+acquisition_frame_rate_enable: true
+frame_rate_auto: "Continuous"
 
 # Exposure settings:
-auto_exposure: false
+exposure_mode: "Timed"
+exposure_auto: "Continuous"
 exposure: 0.0
+exposure_time: 32754.1
+auto_exposure_time_upper_limit: 32754.1
+
 # Shutter settings:
 auto_shutter: false
 shutter_speed: 0.033333333
+
 # Gain settings:
-auto_gain: true
+gain_selector: "All"
+auto_gain: "Continuous"
 gain: 0.0
+
 # White balance settings:
 auto_white_balance: false
-white_balance_blue: 810
-white_balance_red: 550
+white_balance_blue_ratio: 2
+white_balance_red_ratio: 2
+
 # Brightness:
-brightness: 1.0
+brightness: 1.5
+
 # Gamma:
 gamma: 1.0
 
+# Sharpness
+sharpness: 1024
+
 # Strobe and trigger Settings
-enable_strobe1: false
-enable_trigger: false
-enable_trigger_delay: false
-trigger_delay: 0.0
-trigger_mode: mode0
-trigger_parameter: 0
-trigger_polarity: 0
-trigger_source: gpio0
+# enable_strobe1: false
+# enable_trigger: false
+# enable_trigger_delay: false
+# trigger_delay: 0.0
+# trigger_mode: mode0
+# trigger_parameter: 0
+# trigger_polarity: 0
+# trigger_source: gpio0
 
-strobe1_delay: 0.0
-strobe1_duration: 0.0
-strobe1_polarity: 0
+# strobe1_delay: 0.0
+# strobe1_duration: 0.0
+# strobe1_polarity: 0
 
-tilt: 0
-pan: 0
+# tilt: 0
+# pan: 0
 
 # Frame ID:
 # Note the frame ID should be set outside, in order to support multiple/stereo cameras.
