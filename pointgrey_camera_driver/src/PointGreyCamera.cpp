@@ -33,6 +33,7 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
 
 #include <iostream>
 #include <sstream>
+#include <typeinfo>
 
 PointGreyCamera::PointGreyCamera()
 {
@@ -69,8 +70,8 @@ bool PointGreyCamera::setNewConfiguration(pointgrey_camera_driver::PointGreyConf
   bool retVal = true;
 
   // Set Video Mode, Image and Pixel formats
-  retVal = PointGreyCamera::setVideoMode(config.video_mode);
-  retVal = PointGreyCamera::setImageControlFormats(config);
+  // retVal = PointGreyCamera::setVideoMode(config.video_mode);
+  // retVal = PointGreyCamera::setImageControlFormats(config);
 
 
   // Set frame rate
@@ -200,6 +201,9 @@ void PointGreyCamera::setGain(float& gain)
 
 bool PointGreyCamera::setVideoMode(const std::string& videoMode)
 {
+
+  ROS_INFO_STREAM("\n\n videoMode: " << videoMode << "\n\n");
+
   // return true if we can set the video mode as desired.
   bool retVal = true;
 
@@ -340,7 +344,7 @@ int PointGreyCamera::connect()
       node_map_ = &pCam_->GetNodeMap();
 
       // Configure chunk data - Enable Metadata
-      err = ConfigureChunkData(*node_map_);
+      // err = PointGreyCamera::ConfigureChunkData(*node_map_);
       if (err < 0)
       {
         return err;
@@ -443,13 +447,14 @@ int PointGreyCamera::grabImage(sensor_msgs::Image &image, const std::string &fra
   boost::mutex::scoped_lock scopedLock(mutex_);
 
   // Check if Camera is connected and Running
-  if(pCam_ && captureRunning_)
+  if (pCam_ && captureRunning_)
   {
     // Handle "Image Retrieval" Exception
     try
     {
       Spinnaker::ImagePtr image_ptr = pCam_->GetNextImage();
-      std::string format(image_ptr->GetPixelFormatName());
+      //  std::string format(image_ptr->GetPixelFormatName());
+      //  std::printf("\033[100m format: %s \n", format.c_str());
 
       // Set Image Time Stamp
       image.header.stamp.sec = image_ptr->GetTimeStamp() * 1e-9;
@@ -461,12 +466,6 @@ int PointGreyCamera::grabImage(sensor_msgs::Image &image, const std::string &fra
       }
       else
       {
-        int width = image_ptr->GetWidth();
-        int height = image_ptr->GetHeight();
-        int stride = image_ptr->GetStride();
-
-        // ROS_INFO("\033[93m wxh: (%d, %d) \n", width, height);
-
         // Check the bits per pixel.
         size_t bitsPerPixel = image_ptr->GetBitsPerPixel();
 
@@ -477,25 +476,31 @@ int PointGreyCamera::grabImage(sensor_msgs::Image &image, const std::string &fra
 
         Spinnaker::GenApi::IEnumerationT<Spinnaker::PixelColorFilterEnums>& bayer_format = pCam_->PixelColorFilter;
 
+
+        Spinnaker::GenICam::gcstring bayer_rg_str = "BayerRG";
+        Spinnaker::GenICam::gcstring bayer_gr_str = "BayerGR";
+        Spinnaker::GenICam::gcstring bayer_gb_str = "BayerGB";
+        Spinnaker::GenICam::gcstring bayer_bg_str = "BayerBG";
+
         // if(isColor_ && bayer_format != NONE)
         if (bayer_format != Spinnaker::PixelColorFilter_None)
         {
-          if(bitsPerPixel == 16)
+          if (bitsPerPixel == 16)
           {
             // 16 Bits per Pixel
-            if (bayer_format == Spinnaker::PixelColorFilter_BayerRG)
+            if ((*bayer_format).compare(bayer_rg_str) == 0)
             {
               imageEncoding = sensor_msgs::image_encodings::BAYER_RGGB16;
             }
-            else if (bayer_format == Spinnaker::PixelColorFilter_BayerGR)
+            else if ((*bayer_format).compare(bayer_gr_str) == 0)
             {
               imageEncoding = sensor_msgs::image_encodings::BAYER_GRBG16;
             }
-            else if (bayer_format == Spinnaker::PixelColorFilter_BayerGB)
+            else if ((*bayer_format).compare(bayer_gb_str) == 0)
             {
               imageEncoding = sensor_msgs::image_encodings::BAYER_GBRG16;
             }
-            else if (bayer_format == Spinnaker::PixelColorFilter_BayerBG)
+            else if ((*bayer_format).compare(bayer_bg_str) == 0)
             {
               imageEncoding = sensor_msgs::image_encodings::BAYER_BGGR16;
             }
@@ -507,20 +512,21 @@ int PointGreyCamera::grabImage(sensor_msgs::Image &image, const std::string &fra
           else
           {
             // 8 Bits per Pixel
-            if (bayer_format == Spinnaker::PixelColorFilter_BayerRG)
+            if ((*bayer_format).compare(bayer_rg_str) == 0)
             {
               imageEncoding = sensor_msgs::image_encodings::BAYER_RGGB8;
             }
-            else if (bayer_format == Spinnaker::PixelColorFilter_BayerGR)
+            else if ((*bayer_format).compare(bayer_gr_str) == 0)
             {
               imageEncoding = sensor_msgs::image_encodings::BAYER_GRBG8;
             }
-            else if (bayer_format == Spinnaker::PixelColorFilter_BayerGB)
+            else if ((*bayer_format).compare(bayer_gb_str) == 0)
             {
               imageEncoding = sensor_msgs::image_encodings::BAYER_GBRG8;
             }
-            else if (bayer_format == Spinnaker::PixelColorFilter_BayerBG)
+            else if ((*bayer_format).compare(bayer_bg_str) == 0)
             {
+              std::cout << "\n\n \033[97m {4}\n";
               imageEncoding = sensor_msgs::image_encodings::BAYER_BGGR8;
             }
             else
@@ -531,6 +537,7 @@ int PointGreyCamera::grabImage(sensor_msgs::Image &image, const std::string &fra
         }
         else     // Mono camera or in pixel binned mode.
         {
+
           if(bitsPerPixel == 16)
           {
             imageEncoding = sensor_msgs::image_encodings::MONO16;
@@ -550,6 +557,12 @@ int PointGreyCamera::grabImage(sensor_msgs::Image &image, const std::string &fra
         // const std::string  BAYER_GBRG8 = "bayer_gbrg8"
         // std::string imageEncoding = sensor_msgs::image_encodings::BAYER_GBRG8;
 
+
+        int width = image_ptr->GetWidth();
+        int height = image_ptr->GetHeight();
+        int stride = image_ptr->GetStride();
+
+        // ROS_INFO("\033[93m wxh: (%d, %d), stride: %d \n", width, height, stride);
         fillImage(image, imageEncoding, height, width, stride, image_ptr->GetData());
         image.header.frame_id = frame_id;
 
@@ -805,7 +818,7 @@ bool PointGreyCamera::setMaxInt(const std::string &property_name)
 }
 
 
-int ConfigureChunkData(Spinnaker::GenApi::INodeMap & nodeMap)
+int PointGreyCamera::ConfigureChunkData(Spinnaker::GenApi::INodeMap & nodeMap)
 {
   int result = 0;
   ROS_INFO_STREAM("*** CONFIGURING CHUNK DATA ***");
