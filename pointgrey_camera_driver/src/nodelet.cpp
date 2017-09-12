@@ -172,6 +172,15 @@ private:
   */
   void connectCb()
   {
+    if(!pubThread_)     // We need to connect
+    {
+      // Start the thread to loop through and publish messages
+      pubThread_.reset(new boost::thread(boost::bind(&pointgrey_camera_driver::PointGreyCameraNodelet::devicePoll, this)));
+    }
+
+
+    // @tthomas - removing subscriber check and logic below as it's leading to mutex locks and crashes currently
+    /*
     NODELET_DEBUG("Connect callback!");
     boost::mutex::scoped_lock scopedLock(connect_mutex_); // Grab the mutex.  Wait until we're done initializing before letting this function through.
     // Check if we should disconnect (there are 0 subscribers to our data)
@@ -217,6 +226,7 @@ private:
     {
       NODELET_DEBUG("Do nothing in callback.");
     }
+    */
   }
 
   /*!

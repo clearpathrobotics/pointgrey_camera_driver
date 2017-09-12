@@ -526,7 +526,6 @@ int PointGreyCamera::grabImage(sensor_msgs::Image &image, const std::string &fra
             }
             else if ((*bayer_format).compare(bayer_bg_str) == 0)
             {
-              std::cout << "\n\n \033[97m {4}\n";
               imageEncoding = sensor_msgs::image_encodings::BAYER_BGGR8;
             }
             else
