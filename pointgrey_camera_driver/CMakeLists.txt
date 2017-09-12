@@ -19,7 +19,7 @@ generate_dynamic_reconfigure_options(
 
 catkin_package(CATKIN_DEPENDS
   image_exposure_msgs nodelet roscpp sensor_msgs wfov_camera_msgs
-  # OpenCV
+  DEPENDS OpenCV
 )
 
 
@@ -35,22 +35,19 @@ if(NOT Spinnaker_LIBRARIES)
   download_spinnaker(Spinnaker_LIBRARIES Spinnaker_INCLUDE_DIRS)
   message(STATUS "libSpinnaker library: ${Spinnaker_LIBRARIES}")
   message(STATUS "libSpinnaker include: ${Spinnaker_INCLUDE_DIRS}")
+else()
+  message(FATAL_ERROR "Spinnaker library NOT found")
 endif()
 
-
 include_directories(include
-                    ${POINTGREY_INCLUDE_DIR}
                     ${Spinnaker_INCLUDE_DIRS}
                     ${catkin_INCLUDE_DIRS}
                     ${OpenCV_INCLUDE_DIRS})
 
-
 add_library(PointGreyCameraLib src/PointGreyCamera.cpp)
 
-
-
 # Include the Spinnaker Libs
-target_link_libraries(PointGreyCameraLib ${POINTGREY_LIB}
+target_link_libraries(PointGreyCameraLib
                       ${Spinnaker_LIBRARIES}
                       ${catkin_LIBRARIES}
                       ${OpenCV_LIBRARIES})
@@ -120,4 +117,5 @@ if (CATKIN_ENABLE_TESTING)
 
   find_package(roslint REQUIRED)
   roslint_cpp()
+  roslint_add_test()
 endif()

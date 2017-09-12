@@ -36,17 +36,14 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
 #include <typeinfo>
 
 PointGreyCamera::PointGreyCamera()
+  : system_(Spinnaker::System::GetInstance())
+  , camList_(system_->GetCameras())
+  , pCam_(NULL)
+  , serial_(0)
+  , captureRunning_(false)
 {
-  system_ = Spinnaker::System::GetInstance();
-  camList_ = system_->GetCameras();
-
   unsigned int num_cameras = camList_.GetSize();
   ROS_INFO_STREAM("[PointGreyCamera]: Number of cameras detected: " <<  num_cameras);
-
-  pCam_ = NULL;
-
-  serial_ = 0;
-  captureRunning_ = false;
 }
 
 PointGreyCamera::~PointGreyCamera()
@@ -187,7 +184,7 @@ bool PointGreyCamera::setNewConfiguration(pointgrey_camera_driver::PointGreyConf
 }  // end setNewConfiguration
 
 
-void PointGreyCamera::setGain(float& gain)
+void PointGreyCamera::setGain(const float& gain)
 {
   // Turn auto gain off
   pCam_->GainAuto.SetValue(Spinnaker::GainAutoEnums::GainAuto_Off);
@@ -303,17 +300,16 @@ int PointGreyCamera::connect()
     // If we have a specific camera to connect to (specified by a serial number)
     if(serial_ != 0)
     {
-      std::string serial_string = std::to_string(serial_);
+      const auto serial_string = std::to_string(serial_);
 
       try
       {
         pCam_ = camList_.GetBySerial(serial_string);
       }
-      catch (Spinnaker::Exception &e)
+      catch (const Spinnaker::Exception &e)
       {
         ROS_ERROR("PointGreyCamera::connect Could not find camera with serial number: %s Is that camera plugged in?");
-
-        std::cout << "Error: " << e.what() << std::endl;
+        ROS_ERROR_STREAM("Error: " << e.what());
         result = -1;
       }
     }
@@ -325,10 +321,10 @@ int PointGreyCamera::connect()
       {
         pCam_ = camList_.GetByIndex(0);
       }
-      catch (Spinnaker::Exception &e)
+      catch (const Spinnaker::Exception &e)
       {
         ROS_ERROR("PointGreyCamera::connect Failed to get first connected camera");
-        std::cout << "Error: " << e.what() << std::endl;
+        ROS_ERROR_STREAM("Error: " << e.what());
         result = -1;
       }
     }
@@ -354,10 +350,10 @@ int PointGreyCamera::connect()
       float black_level = 1.7;
       setProperty("BlackLevel", black_level);
     }
-    catch (Spinnaker::Exception &e)
+    catch (const Spinnaker::Exception &e)
     {
       ROS_ERROR("PointGreyCamera::connect Failed to connect to camera");
-      std::cout << "Error: " << e.what() << std::endl;
+      ROS_ERROR_STREAM("Error: " << e.what());
       result = -1;
     }
     return result;
@@ -386,9 +382,9 @@ int PointGreyCamera::disconnect()
     {
       pCam_->DeInit();
     }
-    catch (Spinnaker::Exception &e)
+    catch (const Spinnaker::Exception &e)
     {
-      std::cout << "PointGreyCamera::disconnect Failed to disconnect camera with Error: " << e.what() << std::endl;
+      ROS_ERROR_STREAM("PointGreyCamera::disconnect Failed to disconnect camera with Error: " << e.what());
       result = -1;
     }
   }
@@ -430,7 +426,7 @@ bool PointGreyCamera::stop()
       pCam_->EndAcquisition();
       return true;
     }
-    catch (Spinnaker::Exception &e)
+    catch (const Spinnaker::Exception &e)
     {
       ROS_ERROR_STREAM("PointGreyCamera::stop Failed to stop capture with Error: " << e.what());
       return false;
@@ -456,16 +452,16 @@ int PointGreyCamera::grabImage(sensor_msgs::Image &image, const std::string &fra
       //  std::string format(image_ptr->GetPixelFormatName());
       //  std::printf("\033[100m format: %s \n", format.c_str());
 
-      // Set Image Time Stamp
-      image.header.stamp.sec = image_ptr->GetTimeStamp() * 1e-9;
-      image.header.stamp.nsec = image_ptr->GetTimeStamp();
-
       if (image_ptr->IsIncomplete())
       {
         ROS_ERROR("Camera %d Received but is Incomplete", serial_);
       }
       else
       {
+        // Set Image Time Stamp
+        image.header.stamp.sec = image_ptr->GetTimeStamp() * 1e-9;
+        image.header.stamp.nsec = image_ptr->GetTimeStamp();
+
         // Check the bits per pixel.
         size_t bitsPerPixel = image_ptr->GetBitsPerPixel();
 
@@ -551,12 +547,6 @@ int PointGreyCamera::grabImage(sensor_msgs::Image &image, const std::string &fra
           }
         }
 
-        // Check the bayer/pixel format with:
-        // std::string format(image_ptr->GetPixelFormatName());
-        // const std::string  BAYER_GBRG8 = "bayer_gbrg8"
-        // std::string imageEncoding = sensor_msgs::image_encodings::BAYER_GBRG8;
-
-
         int width = image_ptr->GetWidth();
         int height = image_ptr->GetHeight();
         int stride = image_ptr->GetStride();
@@ -567,7 +557,7 @@ int PointGreyCamera::grabImage(sensor_msgs::Image &image, const std::string &fra
 
       }  // end else
     }
-    catch (Spinnaker::Exception& e)
+    catch (const Spinnaker::Exception& e)
     {
       ROS_ERROR_STREAM("PointGreyCamera::grabImage Failed to retrieve buffer with Error: " << e.what());
       result = -1;
@@ -631,6 +621,7 @@ void PointGreyCamera::setDesiredCamera(const uint32_t &id)
   serial_ = id;
 }
 
+// TODO(tthomas)
 // std::vector<uint32_t> PointGreyCamera::getAttachedCameras()
 // {
 //   std::vector<uint32_t> cameras;
@@ -899,7 +890,7 @@ int PointGreyCamera::ConfigureChunkData(Spinnaker::GenApi::INodeMap & nodeMap)
       }
     }
   }
-  catch (Spinnaker::Exception &e)
+  catch (const Spinnaker::Exception &e)
   {
     ROS_ERROR_STREAM("Error: " << e.what());
     result = -1;

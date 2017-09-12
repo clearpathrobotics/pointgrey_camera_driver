@@ -13,7 +13,6 @@
   <group ns="$(arg camera_name)" >
     <group ns="left" >
 
-
       <!-- Both cameras are not loaded into one nodelet manager to avoid the namespacing issue. -->
       <node pkg="nodelet" type="nodelet" name="camera_nodelet"
             args="load pointgrey_camera_driver/PointGreyCameraNodelet /camera_nodelet_manager" >

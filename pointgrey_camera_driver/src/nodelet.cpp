@@ -376,7 +376,7 @@ private:
   */
   void devicePoll()
   {
-    ROS_INFO("\033[94m devicePoll");
+    ROS_INFO("devicePoll");
 
     int result = 0;
 
@@ -462,10 +462,10 @@ private:
             // Set the timeout for grabbing images.
             try
             {
-              double timeout;
-              getMTPrivateNodeHandle().param("timeout", timeout, 1.0);
+              // double timeout;
+              // getMTPrivateNodeHandle().param("timeout", timeout, 1.0);
 
-              NODELET_DEBUG("Setting timeout to: %f.", timeout);
+              // NODELET_DEBUG("Setting timeout to: %f.", timeout);
               // TODO: @tthomas
               // pg_.setTimeout(timeout);
             }

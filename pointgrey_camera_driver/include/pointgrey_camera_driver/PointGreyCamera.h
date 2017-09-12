@@ -44,10 +44,9 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
 
 
 // Spinnaker SDK
+// https://www.ptgrey.com/Content/Images/uploaded/downloads/Software/2016/Spinnaker/html/index.html
 #include "Spinnaker.h"
 #include "SpinGenApi/SpinnakerGenApi.h"
-
-
 
 
 class PointGreyCamera
@@ -87,6 +86,8 @@ public:
   * Will connect to the camera specified in the setDesiredCamera(std::string id) call.  If setDesiredCamera is not called first
   * this will connect to the first camera.  Connecting to the first camera is not recommended for multi-camera or production systems.
   * This function must be called before setNewConfiguration() or start()!
+  *
+  * \return 0 if no error, -1 if error encountered.
   */
   int connect();
 
@@ -94,6 +95,8 @@ public:
   * \brief Disconnects from the camera.
   *
   * Disconnects the camera and frees it.
+  *
+  * \return 0 if no error, -1 if error encountered.
   */
   int disconnect();
 
@@ -101,6 +104,8 @@ public:
   * \brief Starts the camera loading data into its buffer.
   *
   * This function will start the camera capturing images and loading them into the buffer.  To retrieve images, grabImage must be called.
+  *
+  * \return 0 if no error, -1 if error encountered.
   */
   int start();
 
@@ -120,6 +125,8 @@ public:
   * This function will load the raw data from the buffer and place it into a sensor_msgs::Image.
   * \param image sensor_msgs::Image that will be filled with the image currently in the buffer.
   * \param frame_id The name of the optical frame of the camera.
+  *
+  * \return 0 if no error, -1 if error encountered.
   */
   int grabImage(sensor_msgs::Image &image, const std::string &frame_id);
 
@@ -133,6 +140,7 @@ public:
   * \param timeout The desired timeout value (in seconds)
   *
   */
+  // TODO(tthomas): Implement later
   // void setTimeout(const double &timeout);
 
   /*!
@@ -150,6 +158,7 @@ public:
   * \param auto_packet_size Flag stating if packet size should be automatically determined or not.
   * \param packet_size The packet size value to use if auto_packet_size is false.
   */
+  // TODO(tthomas): Implement later
   // void setGigEParameters(bool auto_packet_size, unsigned int packet_size, unsigned int packet_delay);
 
   std::vector<uint32_t> getAttachedCameras();
@@ -161,10 +170,12 @@ public:
   *
   * \return The reported temperature in Celsius.
   */
+  // TODO(tthomas): Implement later
   // float getCameraTemperature();
 
-  void setGain(float& gain);
+  void setGain(const float& gain);
 
+  // TODO(tthomas): Implement the following methods later
   // void setBRWhiteBalance(bool auto_white_balance, uint16_t &blue, uint16_t &red);
 
   // uint getGain();
@@ -191,6 +202,8 @@ private:
   Spinnaker::SystemPtr system_;
   Spinnaker::CameraList camList_;
   Spinnaker::CameraPtr pCam_;
+
+  //TODO(tthomas) use std::shared_ptr
   Spinnaker::GenApi::INodeMap *node_map_;
 
   Spinnaker::ChunkData image_metadata_;
@@ -206,7 +219,7 @@ private:
   const chunkDataType chosenChunkData = IMAGE;
 
   boost::mutex mutex_; ///< A mutex to make sure that we don't try to grabImages while reconfiguring or vice versa.  Implemented with boost::mutex::scoped_lock.
-  volatile bool captureRunning_; ///< A status boolean that checks if the camera has been started and is loading images into its buffer.ù
+  volatile bool captureRunning_; ///< A status boolean that checks if the camera has been started and is loading images into its buffer.
 
   /// If true, camera is currently running in color mode, otherwise camera is running in mono mode
   bool isColor_;
@@ -239,25 +252,13 @@ private:
 
 
   /*!
-  * \brief Sets the white balance property
-  *
-  * This function will set the white balance for the camera..  If value is outside the range of min and max,
-  * it will be set to either extreme.
-  * \param blue Value for the blue white balance setting.
-  * \param red Value for the red white balance setting.
-  *
-  * \return Returns true when the configuration could be applied without modification.
-  */
-  // NOTE: done in "setNewConfiguration" method
-  // bool setWhiteBalance(bool& auto_white_balance, uint16_t &blue, uint16_t &red);
-
-  /*!
   * \brief Gets the current frame rate.
   *
   * Gets the camera's current reported frame rate.
   *
   * \return The reported frame rate.
   */
+  // TODO(tthomas): Implement later
   // float getCameraFrameRate();
 
 
@@ -269,6 +270,7 @@ private:
   *
   * \param guid the camera to autoconfigure
   */
+  // TODO(tthomas): Implement later
   // void setupGigEPacketSize(FlyCapture2::PGRGuid & guid);
 
   /*!
@@ -280,6 +282,7 @@ private:
   * \param guid the camera to autoconfigure
   * \param packet_size The packet size value to use.
   */
+  // TODO(tthomas): Implement later
   // void setupGigEPacketSize(FlyCapture2::PGRGuid & guid, unsigned int packet_size);
 
   /*!
@@ -291,6 +294,7 @@ private:
   * \param guid the camera to autoconfigure
   * \param packet_delay The packet delay value to use.
   */
+  // TODO(tthomas): Implement later
   // void setupGigEPacketDelay(FlyCapture2::PGRGuid & guid, unsigned int packet_delay);
 
 public:
