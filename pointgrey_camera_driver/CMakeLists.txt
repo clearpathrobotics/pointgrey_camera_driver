@@ -54,14 +54,14 @@ target_link_libraries(PointGreyCameraLib
 
 
 # Test Executable for Spinnaker
-# add_executable(spinnaker_test_node
-#               src/spinnaker_test_node.cpp
-# )
+add_executable(spinnaker_test_node
+              src/spinnaker_test_node.cpp
+)
 
-# target_link_libraries(spinnaker_test_node
-#   PointGreyCameraLib
-#   ${catkin_LIBRARIES}
-# )
+target_link_libraries(spinnaker_test_node
+  PointGreyCameraLib
+  ${catkin_LIBRARIES}
+)
 
 
 add_dependencies(PointGreyCameraLib ${PROJECT_NAME}_gencfg)
@@ -103,11 +103,13 @@ install(TARGETS
 
 # Redistributing the flycapture .so file is permitted by the SDK EULA:
 # http://www.ptgrey.com/support/kb/data/PGR-FlyCap-SDK-LA.pdf
-install(FILES ${POINTGREY_LIB} DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION})
+install(FILES ${Spinnaker_LIBRARIES} DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION})
 
 install(FILES nodelet_plugins.xml DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION} )
 
 install(DIRECTORY launch DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION})
+
+install(DIRECTORY config DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION})
 
 if (CATKIN_ENABLE_TESTING)
   find_package(roslaunch REQUIRED)
