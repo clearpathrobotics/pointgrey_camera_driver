@@ -44,6 +44,8 @@ PointGreyCamera::PointGreyCamera()
 {
   unsigned int num_cameras = camList_.GetSize();
   ROS_INFO_STREAM("[PointGreyCamera]: Number of cameras detected: " <<  num_cameras);
+
+
 }
 
 PointGreyCamera::~PointGreyCamera()
@@ -70,16 +72,13 @@ bool PointGreyCamera::setNewConfiguration(pointgrey_camera_driver::PointGreyConf
   // retVal = PointGreyCamera::setVideoMode(config.video_mode);
   // retVal = PointGreyCamera::setImageControlFormats(config);
 
-
-  // Set frame rate
-  retVal = setProperty("AcquisitionFrameRateEnable", config.acquisition_frame_rate_enable);
-
+  retVal = setProperty("AcquisitionFrameRateEnabled", true);
+  retVal = setProperty("AcquisitionFrameRateAuto", "Off");
 
   // retVal = setProperty("AcquisitionFrameRate", config.acquisition_frame_rate);
   // TODO @tthomas: streamline double& to float& conversions
   float temp_frame_rate = config.acquisition_frame_rate;
-  retVal = setProperty("AcquisitionFrameRate", temp_frame_rate);
-  retVal = setProperty("FrameRateAuto", config.frame_rate_auto);
+  retVal = setProperty("AcquisitionFrameRate", temp_frame_rate);  // Feature AcquisitionFrameRate not writable.
 
 
   // Set auto exposure
@@ -153,20 +152,15 @@ bool PointGreyCamera::setNewConfiguration(pointgrey_camera_driver::PointGreyConf
   // Set Trigger and Strobe
   if (config.is_left_camera)
   {
+    // NOTE: The trigger must be disabled (i.e. TriggerMode = "Off") in order to configure whether the source is software or hardware.
     // Set strobe (LEFT CAMERA ONLY)
+    retVal = setProperty("TriggerMode", std::string("Off"));
+    retVal = setProperty("TriggerSource", config.trigger_source);
+    retVal = setProperty("TriggerMode", std::string("On"));
     // and AcquisitionFrameRate (only if Trigger Mode is Off)
     retVal = setProperty("TriggerSelector", config.trigger_selector);
-    // retVal = setProperty("LineMode", config.line_mode);
-    retVal = setProperty("TriggerSource", config.trigger_source);
     retVal = setProperty("TriggerMode", std::string("Off"));  // config.enable_trigger
 
-    /*
-    // Strobe Settings
-    retVal = setProperty("LineSelector", config.line_selector);
-    retVal = setProperty("LineMode", config.line_mode);
-    retVal = setProperty("LineSource", config.line_source);
-    retVal = setProperty("TriggerMode", std::string("Off"));
-    */
   }
   else
   {
@@ -177,6 +171,7 @@ bool PointGreyCamera::setNewConfiguration(pointgrey_camera_driver::PointGreyConf
     retVal = setProperty("TriggerMode", std::string("On"));
     retVal = setProperty("TriggerSelector", config.trigger_selector);
     retVal = setProperty("TriggerActivation", config.trigger_activation_mode);
+    retVal = setProperty("TriggerMode", std::string("Off"));
   }
 
   return retVal;

@@ -10,8 +10,8 @@ image_format_y_offset: 0
 # Frames per second:
 # @todo At higher frequencies it seems there's less blur, but we have to test by
 # saving images while the robot is moving in compare the saved images.
-acquisition_frame_rate: &frame_rate 30.0
-acquisition_frame_rate_enable: true
+acquisition_frame_rate: &frame_rate 10.0 #&frame_rate 30.0
+acquisition_frame_rate_enable: true  #TODO: changed to "enabled"
 frame_rate_auto: "Continuous"
 
 # Exposure settings:
@@ -44,19 +44,6 @@ gamma: 1.0
 # Sharpness
 sharpness: 1024
 
-# Strobe and trigger Settings
-# enable_strobe1: false
-# enable_trigger: false
-# enable_trigger_delay: false
-# trigger_delay: 0.0
-# trigger_mode: mode0
-# trigger_parameter: 0
-# trigger_polarity: 0
-# trigger_source: gpio0
-
-# strobe1_delay: 0.0
-# strobe1_duration: 0.0
-# strobe1_polarity: 0
 
 # tilt: 0
 # pan: 0

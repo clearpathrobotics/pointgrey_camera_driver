@@ -71,6 +71,7 @@ public:
   */
   bool setNewConfiguration(pointgrey_camera_driver::PointGreyConfig &config, const uint32_t &level);
 
+
   /** Parameters that need a sensor to be stopped completely when changed. */
   static const uint8_t LEVEL_RECONFIGURE_CLOSE = 3;
 
