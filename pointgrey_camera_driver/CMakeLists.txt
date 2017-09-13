@@ -33,11 +33,11 @@ if(NOT Spinnaker_LIBRARIES)
   message(STATUS "libSpinnaker not found in system library path")
   include(cmake/DownloadSpinnaker.cmake)
   download_spinnaker(Spinnaker_LIBRARIES Spinnaker_INCLUDE_DIRS)
-  message(STATUS "libSpinnaker library: ${Spinnaker_LIBRARIES}")
-  message(STATUS "libSpinnaker include: ${Spinnaker_INCLUDE_DIRS}")
-else()
-  message(FATAL_ERROR "Spinnaker library NOT found")
 endif()
+
+message(STATUS "libSpinnaker library: ${Spinnaker_LIBRARIES}")
+message(STATUS "libSpinnaker include: ${Spinnaker_INCLUDE_DIRS}")
+
 
 include_directories(include
                     ${Spinnaker_INCLUDE_DIRS}
@@ -103,7 +103,8 @@ install(TARGETS
 
 # Redistributing the flycapture .so file is permitted by the SDK EULA:
 # http://www.ptgrey.com/support/kb/data/PGR-FlyCap-SDK-LA.pdf
-install(FILES ${Spinnaker_LIBRARIES} DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION})
+install(DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/usr/lib/ DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+         PATTERN libQt* EXCLUDE)
 
 install(FILES nodelet_plugins.xml DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION} )
 
