@@ -35,6 +35,9 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
 #include <sstream>
 #include <typeinfo>
 
+#include <ros/ros.h>
+
+
 PointGreyCamera::PointGreyCamera()
   : system_(Spinnaker::System::GetInstance())
   , camList_(system_->GetCameras())
@@ -43,8 +46,7 @@ PointGreyCamera::PointGreyCamera()
   , captureRunning_(false)
 {
   unsigned int num_cameras = camList_.GetSize();
-  ROS_INFO_STREAM("[PointGreyCamera]: Number of cameras detected: " <<  num_cameras);
-
+  ROS_INFO_STREAM_ONCE("[PointGreyCamera]: Number of cameras detected: " <<  num_cameras);
 
 }
 
@@ -68,22 +70,50 @@ bool PointGreyCamera::setNewConfiguration(pointgrey_camera_driver::PointGreyConf
   // return true if we can set values as desired.
   bool retVal = true;
 
-  // Set Video Mode, Image and Pixel formats
-  // retVal = PointGreyCamera::setVideoMode(config.video_mode);
-  // retVal = PointGreyCamera::setImageControlFormats(config);
 
-  retVal = setProperty("AcquisitionFrameRateEnabled", true);
-  retVal = setProperty("AcquisitionFrameRateAuto", "Off");
+  // Set Trigger and Strobe
+  if (config.is_left_camera)
+  {
+    // NOTE: The trigger must be disabled (i.e. TriggerMode = "Off") in order to configure whether the source is software or hardware.
+    // Set strobe (LEFT CAMERA ONLY)
+    retVal = setProperty("TriggerMode", std::string("Off"));
+    retVal = setProperty("TriggerSource", config.trigger_source);
+    retVal = setProperty("TriggerMode", std::string("On"));
+    // and AcquisitionFrameRate (only if Trigger Mode is Off)
+    retVal = setProperty("TriggerSelector", config.trigger_selector);
+    retVal = setProperty("TriggerMode", std::string("Off"));  // config.enable_trigger
 
-  // retVal = setProperty("AcquisitionFrameRate", config.acquisition_frame_rate);
-  // TODO @tthomas: streamline double& to float& conversions
-  float temp_frame_rate = config.acquisition_frame_rate;
-  retVal = setProperty("AcquisitionFrameRate", temp_frame_rate);  // Feature AcquisitionFrameRate not writable.
+  }
+  else
+  {
+    // Trigger (Must be switched off to change source!)
+    // (RIGHT CAMERA ONLY)
+    retVal = setProperty("TriggerMode", std::string("Off"));
+    retVal = setProperty("TriggerSource", config.trigger_source);
+    retVal = setProperty("TriggerMode", std::string("On"));
+    retVal = setProperty("TriggerSelector", config.trigger_selector);
+    retVal = setProperty("TriggerActivation", config.trigger_activation_mode);
+    retVal = setProperty("TriggerMode", std::string("Off"));
+  }
 
 
   // Set auto exposure
   retVal = setProperty("ExposureMode", config.exposure_mode);
   retVal = setProperty("ExposureAuto", config.exposure_auto);
+
+
+  // Set Video Mode, Image and Pixel formats
+  // retVal = PointGreyCamera::setVideoMode(config.video_mode);
+  // retVal = PointGreyCamera::setImageControlFormats(config);
+
+  retVal = setProperty("AcquisitionFrameRateAuto", "Off");
+  retVal = setProperty("AcquisitionFrameRateEnabled", true);
+
+
+  // retVal = setProperty("AcquisitionFrameRate", config.acquisition_frame_rate);
+  // TODO @tthomas: streamline double& to float& conversions
+  float temp_frame_rate = config.acquisition_frame_rate;
+  retVal = setProperty("AcquisitionFrameRate", temp_frame_rate);  // Feature AcquisitionFrameRate not writable.
 
 
   // Set sharpness
@@ -149,30 +179,6 @@ bool PointGreyCamera::setNewConfiguration(pointgrey_camera_driver::PointGreyConf
   retVal = setProperty("BalanceRatio", temp_white_balance_red_ratio);
 
 
-  // Set Trigger and Strobe
-  if (config.is_left_camera)
-  {
-    // NOTE: The trigger must be disabled (i.e. TriggerMode = "Off") in order to configure whether the source is software or hardware.
-    // Set strobe (LEFT CAMERA ONLY)
-    retVal = setProperty("TriggerMode", std::string("Off"));
-    retVal = setProperty("TriggerSource", config.trigger_source);
-    retVal = setProperty("TriggerMode", std::string("On"));
-    // and AcquisitionFrameRate (only if Trigger Mode is Off)
-    retVal = setProperty("TriggerSelector", config.trigger_selector);
-    retVal = setProperty("TriggerMode", std::string("Off"));  // config.enable_trigger
-
-  }
-  else
-  {
-    // Trigger (Must be switched off to change source!)
-    // (RIGHT CAMERA ONLY)
-    retVal = setProperty("TriggerMode", std::string("Off"));
-    retVal = setProperty("TriggerSource", config.trigger_source);
-    retVal = setProperty("TriggerMode", std::string("On"));
-    retVal = setProperty("TriggerSelector", config.trigger_selector);
-    retVal = setProperty("TriggerActivation", config.trigger_activation_mode);
-    retVal = setProperty("TriggerMode", std::string("Off"));
-  }
 
   return retVal;
 
@@ -190,11 +196,10 @@ void PointGreyCamera::setGain(const float& gain)
 
 
 
-
 bool PointGreyCamera::setVideoMode(const std::string& videoMode)
 {
 
-  ROS_INFO_STREAM("\n\n videoMode: " << videoMode << "\n\n");
+  ROS_INFO_STREAM_ONCE("\n\n videoMode: " << videoMode << "\n\n");
 
   // return true if we can set the video mode as desired.
   bool retVal = true;
@@ -217,7 +222,7 @@ bool PointGreyCamera::setVideoMode(const std::string& videoMode)
   }
   else
   {
-    ROS_ERROR("Video Mode Unknown!");
+    ROS_ERROR_ONCE("Video Mode Unknown!");
     retVal = false;
   }
 
@@ -303,8 +308,8 @@ int PointGreyCamera::connect()
       }
       catch (const Spinnaker::Exception &e)
       {
-        ROS_ERROR("PointGreyCamera::connect Could not find camera with serial number: %s Is that camera plugged in?");
-        ROS_ERROR_STREAM("Error: " << e.what());
+        ROS_ERROR_ONCE("PointGreyCamera::connect Could not find camera with serial number: %s Is that camera plugged in?");
+        ROS_ERROR_STREAM_ONCE("Error: " << e.what());
         result = -1;
       }
     }
@@ -318,8 +323,8 @@ int PointGreyCamera::connect()
       }
       catch (const Spinnaker::Exception &e)
       {
-        ROS_ERROR("PointGreyCamera::connect Failed to get first connected camera");
-        ROS_ERROR_STREAM("Error: " << e.what());
+        ROS_ERROR_ONCE("PointGreyCamera::connect Failed to get first connected camera");
+        ROS_ERROR_STREAM_ONCE("Error: " << e.what());
         result = -1;
       }
     }
@@ -347,8 +352,8 @@ int PointGreyCamera::connect()
     }
     catch (const Spinnaker::Exception &e)
     {
-      ROS_ERROR("PointGreyCamera::connect Failed to connect to camera");
-      ROS_ERROR_STREAM("Error: " << e.what());
+      ROS_ERROR_ONCE("PointGreyCamera::connect Failed to connect to camera");
+      ROS_ERROR_STREAM_ONCE("Error: " << e.what());
       result = -1;
     }
     return result;
@@ -379,7 +384,7 @@ int PointGreyCamera::disconnect()
     }
     catch (const Spinnaker::Exception &e)
     {
-      ROS_ERROR_STREAM("PointGreyCamera::disconnect Failed to disconnect camera with Error: " << e.what());
+      ROS_ERROR_STREAM_ONCE("PointGreyCamera::disconnect Failed to disconnect camera with Error: " << e.what());
       result = -1;
     }
   }
@@ -403,7 +408,7 @@ int PointGreyCamera::start()
   }
   catch (Spinnaker::Exception &e)
   {
-    ROS_ERROR_STREAM("PointGreyCamera::start Failed to start capture with Error: " << e.what());
+    ROS_ERROR_STREAM_ONCE("PointGreyCamera::start Failed to start capture with Error: " << e.what());
     int result = -1;
   }
   return result;
@@ -423,7 +428,7 @@ bool PointGreyCamera::stop()
     }
     catch (const Spinnaker::Exception &e)
     {
-      ROS_ERROR_STREAM("PointGreyCamera::stop Failed to stop capture with Error: " << e.what());
+      ROS_ERROR_STREAM_ONCE("PointGreyCamera::stop Failed to stop capture with Error: " << e.what());
       return false;
     }
   }
@@ -449,7 +454,7 @@ int PointGreyCamera::grabImage(sensor_msgs::Image &image, const std::string &fra
 
       if (image_ptr->IsIncomplete())
       {
-        ROS_ERROR("Camera %d Received but is Incomplete", serial_);
+        ROS_ERROR_ONCE("Camera %d Received but is Incomplete", serial_);
       }
       else
       {
@@ -497,7 +502,7 @@ int PointGreyCamera::grabImage(sensor_msgs::Image &image, const std::string &fra
             }
             else
             {
-              ROS_ERROR("Bayer Format Not Recognized!");
+              ROS_ERROR_ONCE("Bayer Format Not Recognized!");
             }
           }
           else
@@ -521,7 +526,7 @@ int PointGreyCamera::grabImage(sensor_msgs::Image &image, const std::string &fra
             }
             else
             {
-              ROS_ERROR("Bayer Format Not Recognized!");
+              ROS_ERROR_ONCE("Bayer Format Not Recognized!");
             }
           }
         }
@@ -546,7 +551,7 @@ int PointGreyCamera::grabImage(sensor_msgs::Image &image, const std::string &fra
         int height = image_ptr->GetHeight();
         int stride = image_ptr->GetStride();
 
-        // ROS_INFO("\033[93m wxh: (%d, %d), stride: %d \n", width, height, stride);
+        // ROS_INFO_ONCE("\033[93m wxh: (%d, %d), stride: %d \n", width, height, stride);
         fillImage(image, imageEncoding, height, width, stride, image_ptr->GetData());
         image.header.frame_id = frame_id;
 
@@ -554,7 +559,7 @@ int PointGreyCamera::grabImage(sensor_msgs::Image &image, const std::string &fra
     }
     catch (const Spinnaker::Exception& e)
     {
-      ROS_ERROR_STREAM("PointGreyCamera::grabImage Failed to retrieve buffer with Error: " << e.what());
+      ROS_ERROR_STREAM_ONCE("PointGreyCamera::grabImage Failed to retrieve buffer with Error: " << e.what());
       result = -1;
     }
 
@@ -651,7 +656,7 @@ bool PointGreyCamera::setProperty(const std::string &property_name, const std::s
 
   if (!Spinnaker::GenApi::IsImplemented(enumerationPtr))
   {
-    ROS_ERROR_STREAM("[PointGreyCamera]: (" << serial_ << ") Enumeration name " << property_name << " not implemented.");
+    ROS_ERROR_STREAM_ONCE("[PointGreyCamera]: (" << serial_ << ") Enumeration name " << property_name << " not implemented.");
     return false;
   }
 
@@ -667,29 +672,29 @@ bool PointGreyCamera::setProperty(const std::string &property_name, const std::s
         {
           enumerationPtr->SetIntValue(enumEmtryPtr->GetValue());
 
-          ROS_INFO_STREAM("[PointGreyCamera]: (" << serial_ <<  ") " << property_name << " set to " <<
+          ROS_INFO_STREAM_ONCE("[PointGreyCamera]: (" << serial_ <<  ") " << property_name << " set to " <<
             enumerationPtr->GetCurrentEntry()->GetSymbolic() << ".");
 
           return true;
         }
         else
         {
-          ROS_WARN_STREAM("[PointGreyCamera]: (" << serial_ << ") Entry name " << entry_name << " not writable.");
+          ROS_WARN_STREAM_ONCE("[PointGreyCamera]: (" << serial_ << ") Entry name " << entry_name << " not writable.");
         }
       }
       else
       {
-        ROS_WARN_STREAM("[PointGreyCamera]: (" << serial_ << ") Entry name " << entry_name << " not available.");
+        ROS_WARN_STREAM_ONCE("[PointGreyCamera]: (" << serial_ << ") Entry name " << entry_name << " not available.");
       }
     }
     else
     {
-      ROS_WARN_STREAM("[PointGreyCamera]: (" << serial_ << ") Enumeration " << property_name << " not writable.");
+      ROS_WARN_STREAM_ONCE("[PointGreyCamera]: (" << serial_ << ") Enumeration " << property_name << " not writable.");
     }
   }
   else
   {
-    ROS_WARN_STREAM("[PointGreyCamera]: (" << serial_ << ") Enumeration " << property_name << " not available.");
+    ROS_WARN_STREAM_ONCE("[PointGreyCamera]: (" << serial_ << ") Enumeration " << property_name << " not available.");
   }
   return false;
 }
@@ -700,7 +705,7 @@ bool PointGreyCamera::setProperty(const std::string &property_name, const float&
 
   if (!Spinnaker::GenApi::IsImplemented(floatPtr))
   {
-    ROS_ERROR_STREAM("[PointGreyCamera]: (" << serial_ << ") Feature name " << property_name << " not implemented.");
+    ROS_ERROR_STREAM_ONCE("[PointGreyCamera]: (" << serial_ << ") Feature name " << property_name << " not implemented.");
     return false;
   }
   if (Spinnaker::GenApi::IsAvailable(floatPtr))
@@ -708,14 +713,14 @@ bool PointGreyCamera::setProperty(const std::string &property_name, const float&
     if (Spinnaker::GenApi::IsWritable(floatPtr))
     {
       floatPtr->SetValue(value);
-      ROS_INFO_STREAM("[PointGreyCamera]: (" << serial_ << ") " <<  property_name << " set to " << floatPtr->GetValue() << ".");
+      ROS_INFO_STREAM_ONCE("[PointGreyCamera]: (" << serial_ << ") " <<  property_name << " set to " << floatPtr->GetValue() << ".");
       return true;
     } else {
-      ROS_WARN_STREAM("[PointGreyCamera]: (" << serial_ << ") Feature " <<
+      ROS_WARN_STREAM_ONCE("[PointGreyCamera]: (" << serial_ << ") Feature " <<
        property_name << " not writable.");
     }
   } else {
-    ROS_WARN_STREAM("[PointGreyCamera]: (" << serial_ << ") Feature " <<
+    ROS_WARN_STREAM_ONCE("[PointGreyCamera]: (" << serial_ << ") Feature " <<
       property_name << " not available.");
   }
   return false;
@@ -727,7 +732,7 @@ bool PointGreyCamera::setProperty(const std::string &property_name, const bool &
   Spinnaker::GenApi::CBooleanPtr boolPtr = node_map_->GetNode(property_name.c_str());
   if (!Spinnaker::GenApi::IsImplemented(boolPtr))
   {
-    ROS_ERROR_STREAM("[PointGreyCamera]: (" << serial_ << ") Feature name " << property_name << " not implemented.");
+    ROS_ERROR_STREAM_ONCE("[PointGreyCamera]: (" << serial_ << ") Feature name " << property_name << " not implemented.");
     return false;
   }
   if (Spinnaker::GenApi::IsAvailable(boolPtr))
@@ -735,17 +740,17 @@ bool PointGreyCamera::setProperty(const std::string &property_name, const bool &
     if (Spinnaker::GenApi::IsWritable(boolPtr))
     {
       boolPtr->SetValue(value);
-      ROS_INFO_STREAM("[PointGreyCamera]: (" << serial_ << ") " << property_name << " set to " << boolPtr->GetValue() << ".");
+      ROS_INFO_STREAM_ONCE("[PointGreyCamera]: (" << serial_ << ") " << property_name << " set to " << boolPtr->GetValue() << ".");
       return true;
     }
     else
     {
-      ROS_WARN_STREAM("[PointGreyCamera]: (" << serial_ << ") Feature " << property_name << " not writable.");
+      ROS_WARN_STREAM_ONCE("[PointGreyCamera]: (" << serial_ << ") Feature " << property_name << " not writable.");
     }
   }
   else
   {
-    ROS_WARN_STREAM("[PointGreyCamera]: (" << serial_ << ") Feature " <<  property_name << " not available.");
+    ROS_WARN_STREAM_ONCE("[PointGreyCamera]: (" << serial_ << ") Feature " <<  property_name << " not available.");
   }
   return false;
 }
@@ -755,7 +760,7 @@ bool PointGreyCamera::setProperty(const std::string &property_name, const int &v
   Spinnaker::GenApi::CIntegerPtr intPtr = node_map_->GetNode(property_name.c_str());
   if (!Spinnaker::GenApi::IsImplemented(intPtr))
   {
-    ROS_ERROR_STREAM("[PointGreyCamera]: (" << serial_ <<  ") Feature name " << property_name << " not implemented.");
+    ROS_ERROR_STREAM_ONCE("[PointGreyCamera]: (" << serial_ <<  ") Feature name " << property_name << " not implemented.");
     return false;
   }
   if (Spinnaker::GenApi::IsAvailable(intPtr))
@@ -763,17 +768,17 @@ bool PointGreyCamera::setProperty(const std::string &property_name, const int &v
     if (Spinnaker::GenApi::IsWritable(intPtr))
     {
       intPtr->SetValue(value);
-      ROS_INFO_STREAM("[PointGreyCamera]: (" << serial_ << ") " << property_name << " set to " << intPtr->GetValue() << ".");
+      ROS_INFO_STREAM_ONCE("[PointGreyCamera]: (" << serial_ << ") " << property_name << " set to " << intPtr->GetValue() << ".");
       return true;
     }
     else
     {
-      ROS_WARN_STREAM("[PointGreyCamera]: (" << serial_ << ") Feature " << property_name << " not writable.");
+      ROS_WARN_STREAM_ONCE("[PointGreyCamera]: (" << serial_ << ") Feature " << property_name << " not writable.");
     }
   }
   else
   {
-    ROS_WARN_STREAM("[PointGreyCamera]: (" << serial_ << ") Feature " << property_name << " not available.");
+    ROS_WARN_STREAM_ONCE("[PointGreyCamera]: (" << serial_ << ") Feature " << property_name << " not available.");
   }
   return false;
 }
@@ -787,17 +792,17 @@ bool PointGreyCamera::setMaxInt(const std::string &property_name)
     if (Spinnaker::GenApi::IsWritable(intPtr))
     {
       intPtr->SetValue(intPtr->GetMax());
-      ROS_INFO_STREAM("[PointGreyCamera]: (" << serial_ << ") " << property_name << " set to " << intPtr->GetValue() << ".");
+      ROS_INFO_STREAM_ONCE("[PointGreyCamera]: (" << serial_ << ") " << property_name << " set to " << intPtr->GetValue() << ".");
       return true;
     }
     else
     {
-      ROS_WARN_STREAM("[PointGreyCamera]: (" << serial_ << ") Feature " << property_name << " not writable.");
+      ROS_WARN_STREAM_ONCE("[PointGreyCamera]: (" << serial_ << ") Feature " << property_name << " not writable.");
     }
   }
   else
   {
-    ROS_WARN_STREAM("[PointGreyCamera]: (" << serial_ << ") Feature " << property_name << " not available.");
+    ROS_WARN_STREAM_ONCE("[PointGreyCamera]: (" << serial_ << ") Feature " << property_name << " not available.");
   }
   return false;
 }
@@ -806,7 +811,7 @@ bool PointGreyCamera::setMaxInt(const std::string &property_name)
 int PointGreyCamera::ConfigureChunkData(Spinnaker::GenApi::INodeMap & nodeMap)
 {
   int result = 0;
-  ROS_INFO_STREAM("*** CONFIGURING CHUNK DATA ***");
+  ROS_INFO_STREAM_ONCE("*** CONFIGURING CHUNK DATA ***");
   try
   {
     // Activate chunk mode
@@ -819,11 +824,11 @@ int PointGreyCamera::ConfigureChunkData(Spinnaker::GenApi::INodeMap & nodeMap)
     Spinnaker::GenApi::CBooleanPtr ptrChunkModeActive = nodeMap.GetNode("ChunkModeActive");
     if (!Spinnaker::GenApi::IsAvailable(ptrChunkModeActive) || !Spinnaker::GenApi::IsWritable(ptrChunkModeActive))
     {
-      ROS_ERROR_STREAM("Unable to activate chunk mode. Aborting...");
+      ROS_ERROR_STREAM_ONCE("Unable to activate chunk mode. Aborting...");
       return -1;
     }
     ptrChunkModeActive->SetValue(true);
-    ROS_INFO_STREAM("Chunk mode activated...");
+    ROS_INFO_STREAM_ONCE("Chunk mode activated...");
 
     // Enable all types of chunk data
     //
@@ -843,13 +848,13 @@ int PointGreyCamera::ConfigureChunkData(Spinnaker::GenApi::INodeMap & nodeMap)
     Spinnaker::GenApi::CEnumerationPtr ptrChunkSelector = nodeMap.GetNode("ChunkSelector");
     if (!Spinnaker::GenApi::IsAvailable(ptrChunkSelector) || !Spinnaker::GenApi::IsReadable(ptrChunkSelector))
     {
-      ROS_ERROR_STREAM("Unable to retrieve chunk selector. Aborting...");
+      ROS_ERROR_STREAM_ONCE("Unable to retrieve chunk selector. Aborting...");
       return -1;
     }
     // Retrieve entries
     ptrChunkSelector->GetEntries(entries);
 
-    ROS_INFO_STREAM("Enabling entries...");
+    ROS_INFO_STREAM_ONCE("Enabling entries...");
 
     for (int i = 0; i < entries.size(); i++)
     {
@@ -862,32 +867,32 @@ int PointGreyCamera::ConfigureChunkData(Spinnaker::GenApi::INodeMap & nodeMap)
       }
       ptrChunkSelector->SetIntValue(ptrChunkSelectorEntry->GetValue());
 
-      ROS_INFO_STREAM("\t" << ptrChunkSelectorEntry->GetSymbolic() << ": ");
+      ROS_INFO_STREAM_ONCE("\t" << ptrChunkSelectorEntry->GetSymbolic() << ": ");
       // Retrieve corresponding boolean
       Spinnaker::GenApi::CBooleanPtr ptrChunkEnable = nodeMap.GetNode("ChunkEnable");
       // Enable the boolean, thus enabling the corresponding chunk data
       if (!Spinnaker::GenApi::IsAvailable(ptrChunkEnable))
       {
-        ROS_INFO("Node not available");
+        ROS_INFO_ONCE("Node not available");
       }
       else if (ptrChunkEnable->GetValue())
       {
-        ROS_INFO("Enabled");
+        ROS_INFO_ONCE("Enabled");
       }
       else if (Spinnaker::GenApi::IsWritable(ptrChunkEnable))
       {
         ptrChunkEnable->SetValue(true);
-        ROS_INFO("Enabled");
+        ROS_INFO_ONCE("Enabled");
       }
       else
       {
-        ROS_INFO("Node not writable");
+        ROS_INFO_ONCE("Node not writable");
       }
     }
   }
   catch (const Spinnaker::Exception &e)
   {
-    ROS_ERROR_STREAM("Error: " << e.what());
+    ROS_ERROR_STREAM_ONCE("Error: " << e.what());
     result = -1;
   }
   return result;

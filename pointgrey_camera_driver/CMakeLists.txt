@@ -29,11 +29,11 @@ catkin_package(CATKIN_DEPENDS
 # contains them. We work around this by downloading the archive directly from
 # their website during this step in the build process.
 find_library(Spinnaker_LIBRARIES Spinnaker)
-if(NOT Spinnaker_LIBRARIES)
+# if(NOT Spinnaker_LIBRARIES)
   message(STATUS "libSpinnaker not found in system library path")
   include(cmake/DownloadSpinnaker.cmake)
   download_spinnaker(Spinnaker_LIBRARIES Spinnaker_INCLUDE_DIRS)
-endif()
+# endif()
 
 message(STATUS "libSpinnaker library: ${Spinnaker_LIBRARIES}")
 message(STATUS "libSpinnaker include: ${Spinnaker_INCLUDE_DIRS}")
