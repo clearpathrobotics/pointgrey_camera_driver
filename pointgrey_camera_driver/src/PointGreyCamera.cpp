@@ -82,7 +82,6 @@ bool PointGreyCamera::setNewConfiguration(pointgrey_camera_driver::PointGreyConf
     // and AcquisitionFrameRate (only if Trigger Mode is Off)
     retVal = setProperty("TriggerSelector", config.trigger_selector);
     retVal = setProperty("TriggerMode", std::string("Off"));  // config.enable_trigger
-
   }
   else
   {
@@ -308,8 +307,7 @@ int PointGreyCamera::connect()
       }
       catch (const Spinnaker::Exception &e)
       {
-        ROS_ERROR_ONCE("PointGreyCamera::connect Could not find camera with serial number: %s Is that camera plugged in?");
-        ROS_ERROR_STREAM_ONCE("Error: " << e.what());
+        ROS_ERROR_STREAM_ONCE("PointGreyCamera::connect Could not find camera with serial number: %s Is that camera plugged in? Error: " << e.what());
         result = -1;
       }
     }
@@ -323,8 +321,7 @@ int PointGreyCamera::connect()
       }
       catch (const Spinnaker::Exception &e)
       {
-        ROS_ERROR_ONCE("PointGreyCamera::connect Failed to get first connected camera");
-        ROS_ERROR_STREAM_ONCE("Error: " << e.what());
+        ROS_ERROR_STREAM_ONCE("PointGreyCamera::connect Failed to get first connected camera. Error: " << e.what());
         result = -1;
       }
     }
@@ -352,8 +349,7 @@ int PointGreyCamera::connect()
     }
     catch (const Spinnaker::Exception &e)
     {
-      ROS_ERROR_ONCE("PointGreyCamera::connect Failed to connect to camera");
-      ROS_ERROR_STREAM_ONCE("Error: " << e.what());
+      ROS_ERROR_STREAM_ONCE("PointGreyCamera::connect Failed to connect to camera. Error: " << e.what());
       result = -1;
     }
     return result;
