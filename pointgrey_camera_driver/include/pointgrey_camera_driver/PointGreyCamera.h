@@ -304,6 +304,7 @@ public:
   bool setProperty(const std::string& property_name, const bool& value);
   bool setProperty(const std::string& property_name, const int& value);
   bool setMaxInt(const std::string& property_name);
+  bool setFrameRate(const float frame_rate);
 
 };
 

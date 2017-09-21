@@ -55,6 +55,64 @@ PointGreyCamera::~PointGreyCamera()
 }
 
 
+bool PointGreyCamera::setFrameRate(const float frame_rate)
+{
+  // This enables the "AcquisitionFrameRateEnabled"
+  //======================================
+
+  Spinnaker::GenApi::CBooleanPtr ptrAcquisitionFrameRateEnable = node_map_->GetNode("AcquisitionFrameRateEnabled");
+  if (!IsAvailable(ptrAcquisitionFrameRateEnable) || !IsWritable(ptrAcquisitionFrameRateEnable))
+  {
+    ROS_ERROR_ONCE("Unable to enable the AcquisitionFrameRateEnable. Aborting... \n");
+    return false;
+  }
+  ptrAcquisitionFrameRateEnable->SetValue(true);
+  //=============================================================================
+
+
+  // This sets the "AcquisitionFrameRateAuto" to "Off"
+  //======================================
+
+  Spinnaker::GenApi::CEnumerationPtr ptrFrameRateAuto = node_map_->GetNode("AcquisitionFrameRateAuto");
+  if (!IsAvailable(ptrFrameRateAuto) || !IsWritable(ptrFrameRateAuto))
+  {
+    ROS_ERROR_ONCE("Unable to set FrameRateAuto to continuous (enum retrieval). Aborting...\n");
+    return false;
+  }
+
+  Spinnaker::GenApi::CEnumEntryPtr ptrFrameRateAutoOff = ptrFrameRateAuto->GetEntryByName("Off");
+  if (!IsAvailable(ptrFrameRateAutoOff) || !IsReadable(ptrFrameRateAutoOff))
+  {
+    ROS_ERROR_ONCE("Unable to set FrameRateAuto to continuous (enum retrieval). Aborting...\n");
+    return false;
+  }
+
+  int64_t frameRateAutoOff = ptrFrameRateAutoOff->GetValue();
+  ptrFrameRateAuto->SetIntValue(frameRateAutoOff);
+  //=============================================================================
+
+
+  // This sets the "AcquisitionFrameRate" to X FPS
+  // ========================================
+
+  Spinnaker::GenApi::CFloatPtr ptrAcquisitionFrameRate = node_map_->GetNode("AcquisitionFrameRate");
+  if (!IsAvailable(ptrAcquisitionFrameRate) || !IsWritable(ptrAcquisitionFrameRate))
+  {
+    ROS_ERROR_ONCE("Unable to set AcquisitionFrameRate. Aborting...\n");
+    return false;
+  }
+
+  ROS_DEBUG_STREAM_ONCE("Minimum Frame Rate: \t " << ptrAcquisitionFrameRate->GetMin());
+  ROS_DEBUG_STREAM_ONCE("Maximum Frame rate: \t " << ptrAcquisitionFrameRate->GetMax());
+
+
+  // Finally Set the Frame Rate
+  ptrAcquisitionFrameRate->SetValue(frame_rate);
+
+
+  ROS_DEBUG_STREAM_ONCE("Current Frame rate: \t " << ptrAcquisitionFrameRate->GetValue());
+}
+
 bool PointGreyCamera::setNewConfiguration(pointgrey_camera_driver::PointGreyConfig &config, const uint32_t &level)
 {
   // Check if camera is connected
@@ -66,10 +124,11 @@ bool PointGreyCamera::setNewConfiguration(pointgrey_camera_driver::PointGreyConf
   // Activate mutex to prevent us from grabbing images during this time
   boost::mutex::scoped_lock scopedLock(mutex_);
 
-
   // return true if we can set values as desired.
   bool retVal = true;
 
+  float temp_frame_rate = config.acquisition_frame_rate;
+  retVal = setFrameRate(temp_frame_rate);
 
   // Set Trigger and Strobe
   if (config.is_left_camera)
@@ -105,6 +164,8 @@ bool PointGreyCamera::setNewConfiguration(pointgrey_camera_driver::PointGreyConf
   // retVal = PointGreyCamera::setVideoMode(config.video_mode);
   // retVal = PointGreyCamera::setImageControlFormats(config);
 
+  /*
+  TODO @tthomas: Revisit/Debug setProperty method for setting frame rate and other properties
   retVal = setProperty("AcquisitionFrameRateAuto", "Off");
   retVal = setProperty("AcquisitionFrameRateEnabled", true);
 
@@ -113,6 +174,7 @@ bool PointGreyCamera::setNewConfiguration(pointgrey_camera_driver::PointGreyConf
   // TODO @tthomas: streamline double& to float& conversions
   float temp_frame_rate = config.acquisition_frame_rate;
   retVal = setProperty("AcquisitionFrameRate", temp_frame_rate);  // Feature AcquisitionFrameRate not writable.
+  */
 
 
   // Set sharpness
