@@ -78,14 +78,14 @@ public:
 
       try
       {
-        NODELET_DEBUG("Stopping camera capture.");
+        NODELET_DEBUG_ONCE("Stopping camera capture.");
         pg_.stop();
-        NODELET_DEBUG("Disconnecting from camera.");
+        NODELET_DEBUG_ONCE("Disconnecting from camera.");
         pg_.disconnect();
       }
       catch(std::runtime_error& e)
       {
-        NODELET_ERROR("%s", e.what());
+        NODELET_ERROR_ONCE("%s", e.what());
       }
     }
   }
@@ -105,7 +105,7 @@ private:
 
     try
     {
-      NODELET_DEBUG("Dynamic reconfigure callback with level: %d", level);
+      NODELET_DEBUG_ONCE("Dynamic reconfigure callback with level: %d", level);
       pg_.setNewConfiguration(config, level);
 
       // Store needed parameters for the metadata message
@@ -161,7 +161,7 @@ private:
     }
     catch(std::runtime_error& e)
     {
-      NODELET_ERROR("Reconfigure Callback failed with error: %s", e.what());
+      NODELET_ERROR_ONCE("Reconfigure Callback failed with error: %s", e.what());
     }
   }
 
@@ -181,14 +181,14 @@ private:
 
     // @tthomas - removing subscriber check and logic below as it's leading to mutex locks and crashes currently
     /*
-    NODELET_DEBUG("Connect callback!");
+    NODELET_DEBUG_ONCE("Connect callback!");
     boost::mutex::scoped_lock scopedLock(connect_mutex_); // Grab the mutex.  Wait until we're done initializing before letting this function through.
     // Check if we should disconnect (there are 0 subscribers to our data)
     if(it_pub_.getNumSubscribers() == 0 && pub_->getPublisher().getNumSubscribers() == 0)
     {
       if (pubThread_)
       {
-        NODELET_DEBUG("Disconnecting.");
+        NODELET_DEBUG_ONCE("Disconnecting.");
         pubThread_->interrupt();
         scopedLock.unlock();
         pubThread_->join();
@@ -198,22 +198,22 @@ private:
 
         try
         {
-          NODELET_DEBUG("Stopping camera capture.");
+          NODELET_DEBUG_ONCE("Stopping camera capture.");
           pg_.stop();
         }
         catch(std::runtime_error& e)
         {
-          NODELET_ERROR("%s", e.what());
+          NODELET_ERROR_ONCE("%s", e.what());
         }
 
         try
         {
-          NODELET_DEBUG("Disconnecting from camera.");
+          NODELET_DEBUG_ONCE("Disconnecting from camera.");
           pg_.disconnect();
         }
         catch(std::runtime_error& e)
         {
-          NODELET_ERROR("%s", e.what());
+          NODELET_ERROR_ONCE("%s", e.what());
         }
       }
     }
@@ -224,7 +224,7 @@ private:
     }
     else
     {
-      NODELET_DEBUG("Do nothing in callback.");
+      NODELET_DEBUG_ONCE("Do nothing in callback.");
     }
     */
   }
@@ -257,13 +257,13 @@ private:
     }
     else
     {
-      NODELET_DEBUG("Serial XMLRPC type.");
+      NODELET_DEBUG_ONCE("Serial XMLRPC type.");
       serial = 0;
     }
 
     std::string camera_serial_path;
     pnh.param<std::string>("camera_serial_path", camera_serial_path, "");
-    NODELET_DEBUG("Camera serial path %s", camera_serial_path.c_str());
+    NODELET_DEBUG_ONCE("Camera serial path %s", camera_serial_path.c_str());
     // If serial has been provided directly as a param, ignore the path
     // to read in the serial from.
     while (serial == 0 && !camera_serial_path.empty())
@@ -271,12 +271,12 @@ private:
       serial = readSerialAsHexFromFile(camera_serial_path);
       if (serial == 0)
       {
-        NODELET_WARN("Waiting for camera serial path to become available");
+        NODELET_WARN_ONCE("Waiting for camera serial path to become available");
         ros::Duration(1.0).sleep(); // Sleep for 1 second, wait for serial device path to become available
       }
     }
 
-    NODELET_DEBUG("Using camera serial %d", serial);
+    NODELET_DEBUG_ONCE("Using camera serial %d", serial);
 
     pg_.setDesiredCamera((uint32_t)serial);
 
@@ -347,7 +347,7 @@ private:
    */
   int readSerialAsHexFromFile(std::string camera_serial_path)
   {
-    NODELET_DEBUG("Reading camera serial file from: %s", camera_serial_path.c_str());
+    NODELET_DEBUG_ONCE("Reading camera serial file from: %s", camera_serial_path.c_str());
 
     std::ifstream serial_file(camera_serial_path.c_str());
     std::stringstream buffer;
@@ -356,15 +356,15 @@ private:
     if (serial_file.is_open())
     {
       std::string serial_str((std::istreambuf_iterator<char>(serial_file)), std::istreambuf_iterator<char>());
-      NODELET_DEBUG("Serial file contents: %s", serial_str.c_str());
+      NODELET_DEBUG_ONCE("Serial file contents: %s", serial_str.c_str());
       buffer << std::hex << serial_str;
       buffer >> serial;
-      NODELET_DEBUG("Serial discovered %d", serial);
+      NODELET_DEBUG_ONCE("Serial discovered %d", serial);
 
       return serial;
     }
 
-    NODELET_WARN("Unable to open serial path: %s", camera_serial_path.c_str());
+    NODELET_WARN_ONCE("Unable to open serial path: %s", camera_serial_path.c_str());
     return 0;
   }
 
@@ -376,7 +376,7 @@ private:
   */
   void devicePoll()
   {
-    ROS_INFO("devicePoll");
+    ROS_INFO_ONCE("devicePoll");
 
     int result = 0;
 
@@ -413,17 +413,19 @@ private:
 
           try
           {
-            NODELET_DEBUG("Stopping camera.");
+            NODELET_DEBUG_ONCE("Stopping camera.");
             pg_.stop();
-            NODELET_DEBUG("Stopped camera.");
+            NODELET_DEBUG_ONCE("Stopped camera.");
 
             state = STOPPED;
           }
           catch(std::runtime_error& e)
           {
-            NODELET_ERROR_COND(state_changed,
-                "Failed to stop error: %s", e.what());
-            ros::Duration(1.0).sleep(); // sleep for one second each time
+            if (state_changed)
+            {
+              NODELET_ERROR_ONCE("Failed to stop with error: %s", e.what());
+              ros::Duration(1.0).sleep(); // sleep for one second each time
+            }
           }
 
           break;
@@ -432,17 +434,19 @@ private:
           // Try disconnecting from the camera
           try
           {
-            NODELET_DEBUG("Disconnecting from camera.");
+            NODELET_DEBUG_ONCE("Disconnecting from camera.");
             pg_.disconnect();
-            NODELET_DEBUG("Disconnected from camera.");
+            NODELET_DEBUG_ONCE("Disconnected from camera.");
 
             state = DISCONNECTED;
           }
           catch(std::runtime_error& e)
           {
-            NODELET_ERROR_COND(state_changed,
-                "Failed to disconnect with error: %s", e.what());
-            ros::Duration(1.0).sleep(); // sleep for one second each time
+            if (state_changed)
+            {
+              NODELET_ERROR_ONCE("Failed to disconnect with error: %s", e.what());
+              ros::Duration(1.0).sleep(); // sleep for one second each time
+            }
           }
 
           break;
@@ -450,11 +454,11 @@ private:
           // Try connecting to the camera
           try
           {
-            NODELET_DEBUG("Connecting to camera.");
+            NODELET_DEBUG_ONCE("Connecting to camera.");
 
             result = pg_.connect();
 
-            NODELET_DEBUG("Connected to camera.");
+            NODELET_DEBUG_ONCE("Connected to camera.");
 
             // Set last configuration, forcing the reconfigure level to stop
             pg_.setNewConfiguration(config_, PointGreyCamera::LEVEL_RECONFIGURE_STOP);
@@ -465,13 +469,13 @@ private:
               // double timeout;
               // getMTPrivateNodeHandle().param("timeout", timeout, 1.0);
 
-              // NODELET_DEBUG("Setting timeout to: %f.", timeout);
+              // NODELET_DEBUG_ONCE("Setting timeout to: %f.", timeout);
               // TODO: @tthomas
               // pg_.setTimeout(timeout);
             }
             catch(std::runtime_error& e)
             {
-              NODELET_ERROR("%s", e.what());
+              NODELET_ERROR_ONCE("%s", e.what());
             }
 
             // Subscribe to gain and white balance changes
@@ -484,9 +488,11 @@ private:
           }
           catch(std::runtime_error& e)
           {
-            NODELET_ERROR_COND(state_changed,
-                "Failed to connect with error: %s", e.what());
-            ros::Duration(1.0).sleep(); // sleep for one second each time
+            if (state_changed)
+            {
+              NODELET_ERROR_ONCE("Failed to connect with error: %s", e.what());
+              ros::Duration(1.0).sleep(); // sleep for one second each time
+            }
           }
 
           break;
@@ -494,17 +500,19 @@ private:
           // Try starting the camera
           try
           {
-            NODELET_DEBUG("Starting camera.");
+            NODELET_DEBUG_ONCE("Starting camera.");
             pg_.start();
-            NODELET_DEBUG("Started camera.");
-            NODELET_DEBUG("Attention: if nothing subscribes to the camera topic, the camera_info is not published on the correspondent topic.");
+            NODELET_DEBUG_ONCE("Started camera.");
+            NODELET_DEBUG_ONCE("Attention: if nothing subscribes to the camera topic, the camera_info is not published on the correspondent topic.");
             state = STARTED;
           }
           catch(std::runtime_error& e)
           {
-            NODELET_ERROR_COND(state_changed,
-                "Failed to start with error: %s", e.what());
-            ros::Duration(1.0).sleep(); // sleep for one second each time
+            if (state_changed)
+            {
+              NODELET_ERROR_ONCE("Failed to start with error: %s", e.what());
+              ros::Duration(1.0).sleep(); // sleep for one second each time
+            }
           }
 
           break;
@@ -513,7 +521,7 @@ private:
           {
             wfov_camera_msgs::WFOVImagePtr wfov_image(new wfov_camera_msgs::WFOVImage);
             // Get the image from the camera library
-            NODELET_DEBUG("Starting a new grab from camera with serial {%d}.", pg_.getSerial());
+            NODELET_DEBUG_ONCE("Starting a new grab from camera with serial {%d}.", pg_.getSerial());
             result = pg_.grabImage(wfov_image->image, frame_id_);
 
             // Set other values
@@ -556,32 +564,32 @@ private:
           }
           catch(CameraTimeoutException& e)
           {
-            NODELET_WARN("%s", e.what());
+            NODELET_WARN_ONCE("%s", e.what());
           }
 
           catch(std::runtime_error& e)
           {
-            NODELET_ERROR("%s", e.what());
+            NODELET_ERROR_ONCE("%s", e.what());
 
             state = ERROR;
           }
 
           break;
         default:
-          NODELET_ERROR("Unknown camera state %d!", state);
+          NODELET_ERROR_ONCE("Unknown camera state %d!", state);
       }
 
       // Update diagnostics
       updater_.update();
     }
-    NODELET_DEBUG("Leaving thread.");
+    NODELET_DEBUG_ONCE("Leaving thread.");
   }
 
   void gainWBCallback(const image_exposure_msgs::ExposureSequence &msg)
   {
     try
     {
-      NODELET_DEBUG("Gain callback:  Setting gain to %f and white balances to %u, %u", msg.gain, msg.white_balance_blue, msg.white_balance_red);
+      NODELET_DEBUG_ONCE("Gain callback:  Setting gain to %f and white balances to %u, %u", msg.gain, msg.white_balance_blue, msg.white_balance_red);
       gain_ = msg.gain;
 
       float gain = static_cast<float>(gain_);
@@ -594,7 +602,7 @@ private:
     }
     catch(std::runtime_error& e)
     {
-      NODELET_ERROR("gainWBCallback failed with error: %s", e.what());
+      NODELET_ERROR_ONCE("gainWBCallback failed with error: %s", e.what());
     }
   }
 
