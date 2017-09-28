@@ -44,13 +44,13 @@ LOGIN_DATA = {
 
 ARCHS = {
     'i386': (
-        'https://www.ptgrey.com/support/downloads/10874/',
-        'spinnaker_1_5_0_27_i386',
-        'usr/lib/libSpinnaker.so.1.5.0.27'),
+        'https://www.ptgrey.com/support/downloads/10825/',
+        'spinnaker_1_2_0_16_i386',
+        'usr/lib/libSpinnaker.so.1.2.0.16'),
     'x86_64': (
-        'https://www.ptgrey.com/support/downloads/10875/',
-        'spinnaker_1_5_0_27_amd64',
-        'usr/lib/libSpinnaker.so.1.5.0.27')
+        'https://www.ptgrey.com/support/downloads/10824/',
+        'spinnaker_1_2_0_16_amd64',
+        'usr/lib/libSpinnaker.so.1.2.0.16')
     }
 
 
