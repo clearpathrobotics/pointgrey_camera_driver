@@ -132,13 +132,12 @@ bool PointGreyCamera::setNewConfiguration(pointgrey_camera_driver::PointGreyConf
 
   // Set Trigger and Strobe Settings
   // NOTE: The trigger must be disabled (i.e. TriggerMode = "Off") in order to configure whether the source is software or hardware.
-  //
   retVal = setProperty("TriggerMode", std::string("Off"));
   retVal = setProperty("TriggerSource", config.trigger_source);
   retVal = setProperty("TriggerSelector", config.trigger_selector);
-  retVal = setProperty("TriggerMode", config.enable_trigger);  // config.enable_trigger
+  retVal = setProperty("TriggerActivation", config.trigger_activation_mode);
+  retVal = setProperty("TriggerMode", config.enable_trigger);
 
-  ROS_ERROR("Line: %s %s %s", config.line_selector.c_str(), config.line_mode.c_str(), config.line_source.c_str());
   retVal = setProperty("LineSelector", config.line_selector);
   retVal = setProperty("LineMode", config.line_mode);
   retVal = setProperty("LineSource", config.line_source);
