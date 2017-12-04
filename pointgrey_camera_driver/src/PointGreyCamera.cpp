@@ -130,30 +130,17 @@ bool PointGreyCamera::setNewConfiguration(pointgrey_camera_driver::PointGreyConf
   float temp_frame_rate = config.acquisition_frame_rate;
   retVal = setFrameRate(temp_frame_rate);
 
-  // Set Trigger and Strobe
-  if (config.is_left_camera)
-  {
-    // NOTE: The trigger must be disabled (i.e. TriggerMode = "Off") in order to configure whether the source is software or hardware.
-    // Set strobe (LEFT CAMERA ONLY)
-    retVal = setProperty("TriggerMode", std::string("Off"));
-    retVal = setProperty("TriggerSource", config.trigger_source);
-    retVal = setProperty("TriggerMode", std::string("On"));
-    // and AcquisitionFrameRate (only if Trigger Mode is Off)
-    retVal = setProperty("TriggerSelector", config.trigger_selector);
-    retVal = setProperty("TriggerMode", std::string("Off"));  // config.enable_trigger
-  }
-  else
-  {
-    // Trigger (Must be switched off to change source!)
-    // (RIGHT CAMERA ONLY)
-    retVal = setProperty("TriggerMode", std::string("Off"));
-    retVal = setProperty("TriggerSource", config.trigger_source);
-    retVal = setProperty("TriggerMode", std::string("On"));
-    retVal = setProperty("TriggerSelector", config.trigger_selector);
-    retVal = setProperty("TriggerActivation", config.trigger_activation_mode);
-    retVal = setProperty("TriggerMode", std::string("Off"));
-  }
+  // Set Trigger and Strobe Settings
+  // NOTE: The trigger must be disabled (i.e. TriggerMode = "Off") in order to configure whether the source is software or hardware.
+  retVal = setProperty("TriggerMode", std::string("Off"));
+  retVal = setProperty("TriggerSource", config.trigger_source);
+  retVal = setProperty("TriggerSelector", config.trigger_selector);
+  retVal = setProperty("TriggerActivation", config.trigger_activation_mode);
+  retVal = setProperty("TriggerMode", config.enable_trigger);
 
+  retVal = setProperty("LineSelector", config.line_selector);
+  retVal = setProperty("LineMode", config.line_mode);
+  retVal = setProperty("LineSource", config.line_source);
 
   // Set auto exposure
   retVal = setProperty("ExposureMode", config.exposure_mode);
