@@ -338,11 +338,8 @@ void PointGreyCamera::setupGigEPacketDelay(PGRGuid & guid, unsigned int packet_d
 
 */
 
-int PointGreyCamera::connect()
+void PointGreyCamera::connect()
 {
-  int result = 0;
-  int err = 0;
-
   if(!pCam_)
   {
     // If we have a specific camera to connect to (specified by a serial number)
@@ -356,22 +353,21 @@ int PointGreyCamera::connect()
       }
       catch (const Spinnaker::Exception &e)
       {
-        ROS_ERROR_STREAM_ONCE("PointGreyCamera::connect Could not find camera with serial number: %s Is that camera plugged in? Error: " << e.what());
-        result = -1;
+        throw std::runtime_error("[PointGreyCamera::connect] Could not find camera with serial number " +
+                                 serial_string + ". Is that camera plugged in? Error: " + std::string(e.what()));
       }
     }
     else
     {
       // Connect to any camera (the first)
-
       try
       {
         pCam_ = camList_.GetByIndex(0);
       }
       catch (const Spinnaker::Exception &e)
       {
-        ROS_ERROR_STREAM_ONCE("PointGreyCamera::connect Failed to get first connected camera. Error: " << e.what());
-        result = -1;
+        throw std::runtime_error("[PointGreyCamera::connect] Failed to get first connected camera. Error: " +
+                                 std::string(e.what()));
       }
     }
 
@@ -386,11 +382,7 @@ int PointGreyCamera::connect()
       node_map_ = &pCam_->GetNodeMap();
 
       // Configure chunk data - Enable Metadata
-      // err = PointGreyCamera::ConfigureChunkData(*node_map_);
-      if (err < 0)
-      {
-        return err;
-      }
+      // ConfigureChunkData(*node_map_);
 
       // NOTE: Brightness is termed black level in GenICam
       float black_level = 1.7;
@@ -398,10 +390,14 @@ int PointGreyCamera::connect()
     }
     catch (const Spinnaker::Exception &e)
     {
-      ROS_ERROR_STREAM_ONCE("PointGreyCamera::connect Failed to connect to camera. Error: " << e.what());
-      result = -1;
+      throw std::runtime_error("[PointGreyCamera::connect] Failed to connect to camera. Error: " +
+                               std::string(e.what()));
     }
-    return result;
+    catch (const std::runtime_error& e)
+    {
+      throw std::runtime_error("[PointGreyCamera::connect] Failed to configure chunk data. Error: " +
+                               std::string(e.what()));
+    }
 
     // TODO: Get camera info to check if camera is running in color or mono mode
     /*
@@ -413,10 +409,8 @@ int PointGreyCamera::connect()
   }
 }
 
-int PointGreyCamera::disconnect()
+void PointGreyCamera::disconnect()
 {
-  int result = 0;
-
   boost::mutex::scoped_lock scopedLock(mutex_);
   captureRunning_ = false;
 
@@ -429,18 +423,14 @@ int PointGreyCamera::disconnect()
     }
     catch (const Spinnaker::Exception &e)
     {
-      ROS_ERROR_STREAM_ONCE("PointGreyCamera::disconnect Failed to disconnect camera with Error: " << e.what());
-      result = -1;
+      throw std::runtime_error("[PointGreyCamera::disconnect] Failed to disconnect camera with error: " +
+                               std::string(e.what()));
     }
   }
-
-  return result;
 }
 
-int PointGreyCamera::start()
+void PointGreyCamera::start()
 {
-  int result = 0;
-
   try
   {
     // Check if camera is connected
@@ -451,16 +441,14 @@ int PointGreyCamera::start()
       captureRunning_ = true;
     }
   }
-  catch (Spinnaker::Exception &e)
+  catch (const Spinnaker::Exception &e)
   {
-    ROS_ERROR_STREAM_ONCE("PointGreyCamera::start Failed to start capture with Error: " << e.what());
-    int result = -1;
+    throw std::runtime_error("[PointGreyCamera::start] Failed to start capture with error: " + std::string(e.what()));
   }
-  return result;
 }
 
 
-bool PointGreyCamera::stop()
+void PointGreyCamera::stop()
 {
   if (pCam_ && captureRunning_)
   {
@@ -469,22 +457,17 @@ bool PointGreyCamera::stop()
     {
       captureRunning_ = false;
       pCam_->EndAcquisition();
-      return true;
     }
     catch (const Spinnaker::Exception &e)
     {
-      ROS_ERROR_STREAM_ONCE("PointGreyCamera::stop Failed to stop capture with Error: " << e.what());
-      return false;
+      throw std::runtime_error("[PointGreyCamera::stop] Failed to stop capture with error: " + std::string(e.what()));
     }
   }
-  return false;
 }
 
 
-int PointGreyCamera::grabImage(sensor_msgs::Image &image, const std::string &frame_id)
+void PointGreyCamera::grabImage(sensor_msgs::Image &image, const std::string &frame_id)
 {
-  int result = 0;
-
   boost::mutex::scoped_lock scopedLock(mutex_);
 
   // Check if Camera is connected and Running
@@ -499,7 +482,8 @@ int PointGreyCamera::grabImage(sensor_msgs::Image &image, const std::string &fra
 
       if (image_ptr->IsIncomplete())
       {
-        ROS_ERROR_ONCE("Camera %d Received but is Incomplete", serial_);
+        throw std::runtime_error("[PointGreyCamera::grabImage] Image received from camera " + std::to_string(serial_) +
+                                 " is incomplete.");
       }
       else
       {
@@ -547,7 +531,7 @@ int PointGreyCamera::grabImage(sensor_msgs::Image &image, const std::string &fra
             }
             else
             {
-              ROS_ERROR_ONCE("Bayer Format Not Recognized!");
+              throw std::runtime_error("[PointGreyCamera::grabImage] Bayer format not recognized for 16-bit format.");
             }
           }
           else
@@ -571,7 +555,7 @@ int PointGreyCamera::grabImage(sensor_msgs::Image &image, const std::string &fra
             }
             else
             {
-              ROS_ERROR_ONCE("Bayer Format Not Recognized!");
+              throw std::runtime_error("[PointGreyCamera::grabImage] Bayer format not recognized for 8-bit format.");
             }
           }
         }
@@ -599,27 +583,24 @@ int PointGreyCamera::grabImage(sensor_msgs::Image &image, const std::string &fra
         // ROS_INFO_ONCE("\033[93m wxh: (%d, %d), stride: %d \n", width, height, stride);
         fillImage(image, imageEncoding, height, width, stride, image_ptr->GetData());
         image.header.frame_id = frame_id;
-
       }  // end else
     }
     catch (const Spinnaker::Exception& e)
     {
-      ROS_ERROR_STREAM_ONCE("PointGreyCamera::grabImage Failed to retrieve buffer with Error: " << e.what());
-      result = -1;
+      throw std::runtime_error("[PointGreyCamera::grabImage] Failed to retrieve buffer with error: " +
+                               std::string(e.what()));
     }
 
   }
   else if(pCam_)
   {
-    throw CameraNotRunningException("PointGreyCamera::grabImage: Camera is currently not running.  Please start the capture.");
+    throw CameraNotRunningException("[PointGreyCamera::grabImage] Camera is currently not running.  Please start "
+                                    "capturing frames first.");
   }
   else
   {
-    throw std::runtime_error("PointGreyCamera::grabImage not connected!");
+    throw std::runtime_error("[PointGreyCamera::grabImage] Not connected to the camera.");
   }
-
-  return result;
-
 }  // end grabImage
 
 
@@ -853,9 +834,8 @@ bool PointGreyCamera::setMaxInt(const std::string &property_name)
 }
 
 
-int PointGreyCamera::ConfigureChunkData(Spinnaker::GenApi::INodeMap & nodeMap)
+void PointGreyCamera::ConfigureChunkData(Spinnaker::GenApi::INodeMap & nodeMap)
 {
-  int result = 0;
   ROS_INFO_STREAM_ONCE("*** CONFIGURING CHUNK DATA ***");
   try
   {
@@ -869,8 +849,7 @@ int PointGreyCamera::ConfigureChunkData(Spinnaker::GenApi::INodeMap & nodeMap)
     Spinnaker::GenApi::CBooleanPtr ptrChunkModeActive = nodeMap.GetNode("ChunkModeActive");
     if (!Spinnaker::GenApi::IsAvailable(ptrChunkModeActive) || !Spinnaker::GenApi::IsWritable(ptrChunkModeActive))
     {
-      ROS_ERROR_STREAM_ONCE("Unable to activate chunk mode. Aborting...");
-      return -1;
+      throw std::runtime_error("Unable to activate chunk mode. Aborting...");
     }
     ptrChunkModeActive->SetValue(true);
     ROS_INFO_STREAM_ONCE("Chunk mode activated...");
@@ -893,8 +872,7 @@ int PointGreyCamera::ConfigureChunkData(Spinnaker::GenApi::INodeMap & nodeMap)
     Spinnaker::GenApi::CEnumerationPtr ptrChunkSelector = nodeMap.GetNode("ChunkSelector");
     if (!Spinnaker::GenApi::IsAvailable(ptrChunkSelector) || !Spinnaker::GenApi::IsReadable(ptrChunkSelector))
     {
-      ROS_ERROR_STREAM_ONCE("Unable to retrieve chunk selector. Aborting...");
-      return -1;
+      throw std::runtime_error("Unable to retrieve chunk selector. Aborting...");
     }
     // Retrieve entries
     ptrChunkSelector->GetEntries(entries);
@@ -935,10 +913,8 @@ int PointGreyCamera::ConfigureChunkData(Spinnaker::GenApi::INodeMap & nodeMap)
       }
     }
   }
-  catch (const Spinnaker::Exception &e)
+  catch (const Spinnaker::Exception& e)
   {
-    ROS_ERROR_STREAM_ONCE("Error: " << e.what());
-    result = -1;
+    throw std::runtime_error(e.what());
   }
-  return result;
 }
