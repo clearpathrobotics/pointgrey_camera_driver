@@ -1,10 +1,8 @@
 /*
-This code was developed by the National Robotics Engineering Center (NREC), part
-of the Robotics Institute at Carnegie Mellon University.
-Its development was funded by DARPA under the LS3 program and submitted for
-public release on June 7th, 2012.
-Release was granted on August, 21st 2012 with Distribution Statement "A"
-(Approved for Public Release, Distribution Unlimited).
+This code was developed by the National Robotics Engineering Center (NREC), part of the Robotics Institute at Carnegie
+Mellon University. Its development was funded by DARPA under the LS3 program and submitted for public release on June
+7th, 2012. Release was granted on August, 21st 2012 with Distribution Statement "A" (Approved for Public Release,
+Distribution Unlimited).
 
 This software is released under a BSD license:
 
@@ -49,8 +47,6 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <string>
 #include "pointgrey_camera_driver/PointGreyCamera.h"
 
-using namespace FlyCapture2;
-
 #define PGERROR(error, msg) PointGreyCamera::handleError(msg, error)
 
 void printCameraInfo(const CameraInfo& cinfo)
@@ -63,7 +59,7 @@ void printCameraInfo(const CameraInfo& cinfo)
 
 int main(int argc, char** argv)
 {
-  BusManager bus_manager;
+  FlyCapture2::BusManager bus_manager;
 
   try
   {
@@ -82,7 +78,7 @@ int main(int argc, char** argv)
         Camera camera;
         PGERROR(camera.Connect(&guid), "Failed to connect to camera");
 
-        CameraInfo cinfo;
+        FlyCapture2::CameraInfo cinfo;
         PGERROR(camera.GetCameraInfo(&cinfo), "Failed to get camera info");
 
         std::cout << "[" << i << "]";

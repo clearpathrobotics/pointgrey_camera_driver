@@ -42,6 +42,7 @@ DAMAGE.
 #include <iostream>
 #include <sstream>
 #include <typeinfo>
+#include <string>
 
 #include <ros/ros.h>
 
@@ -153,13 +154,13 @@ bool PointGreyCamera::setNewConfiguration(pointgrey_camera_driver::PointGreyConf
   // retVal = PointGreyCamera::setImageControlFormats(config);
 
   /*
-  TODO @tthomas: Revisit/Debug setProperty method for setting frame rate and other properties
+  TODO(efernandez): Revisit/Debug setProperty method for setting frame rate and other properties
   retVal = setProperty("AcquisitionFrameRateAuto", "Off");
   retVal = setProperty("AcquisitionFrameRateEnabled", true);
 
 
   // retVal = setProperty("AcquisitionFrameRate", config.acquisition_frame_rate);
-  // TODO @tthomas: streamline double& to float& conversions
+  // TODO(efernandez): streamline double& to float& conversions
   float temp_frame_rate = config.acquisition_frame_rate;
   retVal = setProperty("AcquisitionFrameRate", temp_frame_rate);  // Feature AcquisitionFrameRate not writable.
   */
@@ -225,7 +226,6 @@ bool PointGreyCamera::setNewConfiguration(pointgrey_camera_driver::PointGreyConf
   retVal = setProperty("BalanceRatio", temp_white_balance_red_ratio);
 
   return retVal;
-
 }  // end setNewConfiguration
 
 void PointGreyCamera::setGain(const float& gain)
@@ -239,7 +239,6 @@ void PointGreyCamera::setGain(const float& gain)
 
 bool PointGreyCamera::setVideoMode(const std::string& videoMode)
 {
-
   ROS_INFO_STREAM_ONCE("\n\n videoMode: " << videoMode << "\n\n");
 
   // return true if we can set the video mode as desired.
@@ -273,7 +272,6 @@ bool PointGreyCamera::setVideoMode(const std::string& videoMode)
 // Image Size and Pixel Format
 bool PointGreyCamera::setImageControlFormats(pointgrey_camera_driver::PointGreyConfig& config)
 {
-
   // return true if we can set values as desired.
   bool retVal = true;
 
@@ -359,7 +357,7 @@ void PointGreyCamera::connect()
       }
     }
 
-    // TODO @tthomas - check if interface is GigE and connect to GigE cam
+    // TODO(efernandez) - check if interface is GigE and connect to GigE cam
 
     try
     {
@@ -387,7 +385,7 @@ void PointGreyCamera::connect()
                                std::string(e.what()));
     }
 
-    // TODO: Get camera info to check if camera is running in color or mono mode
+    // TODO(efernandez) Get camera info to check if camera is running in color or mono mode
     /*
     CameraInfo cInfo;
     error = cam_.GetCameraInfo(&cInfo);
@@ -545,7 +543,6 @@ void PointGreyCamera::grabImage(sensor_msgs::Image& image, const std::string& fr
         }
         else  // Mono camera or in pixel binned mode.
         {
-
           if (bitsPerPixel == 16)
           {
             imageEncoding = sensor_msgs::image_encodings::MONO16;
@@ -586,13 +583,13 @@ void PointGreyCamera::grabImage(sensor_msgs::Image& image, const std::string& fr
   }
 }  // end grabImage
 
-// TODO: @tthomas - Implement later if needed
+// TODO(efernandez) - Implement later if needed
 void PointGreyCamera::grabStereoImage(sensor_msgs::Image& image, const std::string& frame_id,
                                       sensor_msgs::Image& second_image, const std::string& second_frame_id)
 {
 }
 
-// TODO @tthomas
+// TODO(efernandez)
 // uint PointGreyCamera::getGain()
 // {
 //   return metadata_.embeddedGain >> 20;

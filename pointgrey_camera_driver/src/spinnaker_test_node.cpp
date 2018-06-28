@@ -21,7 +21,6 @@ namespace pointgrey_camera_driver
 
 class SpinnakerTestNode
 {
-
 public:
   SpinnakerTestNode();
 

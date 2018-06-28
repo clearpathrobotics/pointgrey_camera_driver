@@ -37,10 +37,11 @@ DAMAGE.
    @attention Carnegie Mellon University
 */
 
-#ifndef _CAMERAEXCEPTIONS_H_
-#define _CAMERAEXCEPTIONS_H_
+#ifndef POINTGREY_CAMERA_DRIVER_CAMERA_EXCEPTIONS_H
+#define POINTGREY_CAMERA_DRIVER_CAMERA_EXCEPTIONS_H
 
 #include <stdexcept>
+#include <string>
 
 class CameraTimeoutException : public std::runtime_error
 {
@@ -48,7 +49,8 @@ public:
   CameraTimeoutException() : runtime_error("Image not found within timeout.")
   {
   }
-  CameraTimeoutException(const std::string& msg) : runtime_error(msg.c_str())
+
+  explicit CameraTimeoutException(const std::string& msg) : runtime_error(msg.c_str())
   {
   }
 };
@@ -59,7 +61,8 @@ public:
   CameraNotRunningException() : runtime_error("Camera is currently not running.  Please start the capture.")
   {
   }
-  CameraNotRunningException(const std::string& msg) : runtime_error(msg.c_str())
+
+  explicit CameraNotRunningException(const std::string& msg) : runtime_error(msg.c_str())
   {
   }
 };
@@ -70,9 +73,10 @@ public:
   CameraImageNotReadyException() : runtime_error("Image is currently not ready.")
   {
   }
-  CameraImageNotReadyException(const std::string& msg) : runtime_error(msg.c_str())
+
+  explicit CameraImageNotReadyException(const std::string& msg) : runtime_error(msg.c_str())
   {
   }
 };
 
-#endif
+#endif  // POINTGREY_CAMERA_DRIVER_CAMERA_EXCEPTIONS_H

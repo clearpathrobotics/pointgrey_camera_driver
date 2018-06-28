@@ -65,6 +65,7 @@ DAMAGE.
 #include <dynamic_reconfigure/server.h>  // Needed for the dynamic_reconfigure gui service to run
 
 #include <fstream>
+#include <string>
 
 namespace pointgrey_camera_driver
 {
@@ -295,7 +296,7 @@ private:
     pnh.param<bool>("auto_packet_size", auto_packet_size_, true);
     pnh.param<int>("packet_delay", packet_delay_, 4000);
 
-    // TODO: @tthomas Set GigE parameters:
+    // TODO(efernandez) Set GigE parameters:
     // pg_.setGigEParameters(auto_packet_size_, packet_size_, packet_delay_);
 
     // Get the location of our camera config yaml
@@ -478,7 +479,7 @@ private:
               // getMTPrivateNodeHandle().param("timeout", timeout, 1.0);
 
               // NODELET_DEBUG_ONCE("Setting timeout to: %f.", timeout);
-              // TODO: @tthomas
+              // TODO(efernandez)
               // pg_.setTimeout(timeout);
             }
             catch (std::runtime_error& e)
@@ -609,7 +610,7 @@ private:
       wb_blue_ = msg.white_balance_blue;
       wb_red_ = msg.white_balance_red;
 
-      // TODO: @tthomas
+      // TODO(efernandez)
       // pg_.setBRWhiteBalance(false, wb_blue_, wb_red_);
     }
     catch (std::runtime_error& e)

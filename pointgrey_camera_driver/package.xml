@@ -2,9 +2,10 @@
 <package format="2">
   <name>pointgrey_camera_driver</name>
   <version>0.13.1</version>
-  <description>Point Grey camera driver based on libflycapture2.</description>
+  <description>Point Grey camera driver based on libSpinnaker.</description>
 
   <maintainer email="mpurvis@clearpathrobotics.com">Mike Purvis</maintainer>
+  <maintainer email="efernandez@clearpath.ai">Enrique Fernandez</maintainer>
 
   <license>BSD</license>
 
@@ -33,7 +34,7 @@
 
   <exec_depend>image_proc</exec_depend>
   <exec_depend>stereo_image_proc</exec_depend>
-  
+
   <test_depend>roslaunch</test_depend>
   <test_depend>roslint</test_depend>
 

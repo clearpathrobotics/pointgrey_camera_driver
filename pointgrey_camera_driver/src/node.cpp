@@ -39,6 +39,8 @@ DAMAGE.
 #include <nodelet/loader.h>
 #include "ros/ros.h"
 
+#include <string>
+
 int main(int argc, char** argv)
 {
   ros::init(argc, argv, "pointgrey_camera_node");
