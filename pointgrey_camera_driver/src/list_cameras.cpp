@@ -1,10 +1,8 @@
 /*
-This code was developed by the National Robotics Engineering Center (NREC), part
-of the Robotics Institute at Carnegie Mellon University.
-Its development was funded by DARPA under the LS3 program and submitted for
-public release on June 7th, 2012.
-Release was granted on August, 21st 2012 with Distribution Statement "A"
-(Approved for Public Release, Distribution Unlimited).
+This code was developed by the National Robotics Engineering Center (NREC), part of the Robotics Institute at Carnegie
+Mellon University. Its development was funded by DARPA under the LS3 program and submitted for public release on June
+7th, 2012. Release was granted on August, 21st 2012 with Distribution Statement "A" (Approved for Public Release,
+Distribution Unlimited).
 
 This software is released under a BSD license:
 
@@ -49,56 +47,57 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <string>
 #include "pointgrey_camera_driver/PointGreyCamera.h"
 
-using namespace FlyCapture2;
-
 #define PGERROR(error, msg) PointGreyCamera::handleError(msg, error)
 
-void printCameraInfo(const CameraInfo& cinfo) {
-  std::cout << "Serial: " << cinfo.serialNumber
-            << ", Model: " << cinfo.modelName
-            << ", Vendor: " << cinfo.vendorName
-            << ", Sensor: " << cinfo.sensorInfo
-            << ", Resolution: " << cinfo.sensorResolution
-            << ", Color: " << std::boolalpha << cinfo.isColorCamera
-            << ", Firmware Version: " << cinfo.firmwareVersion << std::endl;
+void printCameraInfo(const CameraInfo& cinfo)
+{
+  std::cout << "Serial: " << cinfo.serialNumber << ", Model: " << cinfo.modelName << ", Vendor: " << cinfo.vendorName
+            << ", Sensor: " << cinfo.sensorInfo << ", Resolution: " << cinfo.sensorResolution
+            << ", Color: " << std::boolalpha << cinfo.isColorCamera << ", Firmware Version: " << cinfo.firmwareVersion
+            << std::endl;
 }
 
-int main(int argc, char** argv) {
-  BusManager bus_manager;
+int main(int argc, char** argv)
+{
+  FlyCapture2::BusManager bus_manager;
 
-  try {
+  try
+  {
     unsigned num_devices = 0;
-    PGERROR(bus_manager.GetNumOfCameras(&num_devices),
-            "Failed get number of cameras");
-    if (num_devices) {
+    PGERROR(bus_manager.GetNumOfCameras(&num_devices), "Failed get number of cameras");
+    if (num_devices)
+    {
       std::cout << "Number of cameras found: " << num_devices << std::endl;
-      for (unsigned i = 0; i < num_devices; ++i) {
+      for (unsigned i = 0; i < num_devices; ++i)
+      {
         PGRGuid guid;
         std::ostringstream s;
         s << i;
-        PGERROR(bus_manager.GetCameraFromIndex(i, &guid),
-                "Failed to get camera from index " + s.str());
+        PGERROR(bus_manager.GetCameraFromIndex(i, &guid), "Failed to get camera from index " + s.str());
 
         Camera camera;
         PGERROR(camera.Connect(&guid), "Failed to connect to camera");
 
-        CameraInfo cinfo;
+        FlyCapture2::CameraInfo cinfo;
         PGERROR(camera.GetCameraInfo(&cinfo), "Failed to get camera info");
 
         std::cout << "[" << i << "]";
         printCameraInfo(cinfo);
       }
-    } else {
+    }
+    else
+    {
       // No cameras found
-      std::cout << "No PointGrey cameras detected on this computer."
-                << std::endl << std::endl;
+      std::cout << "No PointGrey cameras detected on this computer." << std::endl << std::endl;
 
       std::cout << "Note that you may need to restart udev and "
-                   "replug your camera, eg:" << std::endl
+                   "replug your camera, eg:"
+                << std::endl
                 << "  sudo service udev restart" << std::endl;
     }
-  } catch (const std::runtime_error& e) {
-    std::cout << "There was an error checking the active cameras: " << e.what()
-              << std::endl;
+  }
+  catch (const std::runtime_error& e)
+  {
+    std::cout << "There was an error checking the active cameras: " << e.what() << std::endl;
   }
 }
