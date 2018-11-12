@@ -291,6 +291,11 @@ private:
 
     pg_.setDesiredCamera((uint32_t)serial);
 
+    // set the index of the camera in the camList (fall back if no serial is given)
+    int camList_index = 0;
+    pnh.param<int>("camList_index", camList_index, 0);
+    pg_.setDesiredCameraIndex((uint32_t)camList_index);
+
     // Get GigE camera parameters:
     pnh.param<int>("packet_size", packet_size_, 1400);
     pnh.param<bool>("auto_packet_size", auto_packet_size_, true);

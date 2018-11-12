@@ -150,6 +150,14 @@ public:
   void setDesiredCamera(const uint32_t& id);
 
   /*!
+   * \brief Used to set the index in the discovered camera list for the camera you wish to connect to.
+   *
+   * A Set Serial number will take precedence over this value. If this value is not set, the driver will try to
+   * connect to the first camera on the bus. This function should be called before connect().
+   */
+  void setDesiredCameraIndex(const uint32_t& id);
+
+  /*!
    * \brief Set parameters relative to GigE cameras.
    *
    * \param auto_packet_size Flag stating if packet size should be automatically determined or not.
@@ -194,6 +202,8 @@ public:
 
 private:
   uint32_t serial_;  ///< A variable to hold the serial number of the desired camera.
+
+  uint32_t camList_index_; // the default camera in the camList to connect to when a serial is not provided
 
   Spinnaker::SystemPtr system_;
   Spinnaker::CameraList camList_;
