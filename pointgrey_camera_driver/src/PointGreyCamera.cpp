@@ -51,6 +51,7 @@ PointGreyCamera::PointGreyCamera()
   , camList_(system_->GetCameras())
   , pCam_(NULL)
   , serial_(0)
+  , camList_index_(0)
   , captureRunning_(false)
 {
   unsigned int num_cameras = camList_.GetSize();
@@ -146,8 +147,8 @@ bool PointGreyCamera::setNewConfiguration(pointgrey_camera_driver::PointGreyConf
   retVal = setProperty("LineSource", config.line_source);
 
   // Set auto exposure
-  retVal = setProperty("ExposureMode", config.exposure_mode);
   retVal = setProperty("ExposureAuto", config.exposure_auto);
+  retVal = setProperty("ExposureMode", config.exposure_mode);
 
   // Set Video Mode, Image and Pixel formats
   // retVal = PointGreyCamera::setVideoMode(config.video_mode);
@@ -345,10 +346,10 @@ void PointGreyCamera::connect()
     }
     else
     {
-      // Connect to any camera (the first)
+      // Connect to a camera in the list (the first by default)
       try
       {
-        pCam_ = camList_.GetByIndex(0);
+        pCam_ = camList_.GetByIndex(camList_index_);
       }
       catch (const Spinnaker::Exception& e)
       {
@@ -624,6 +625,15 @@ void PointGreyCamera::setDesiredCamera(const uint32_t& id)
 {
   serial_ = id;
 }
+
+void PointGreyCamera::setDesiredCameraIndex(const uint32_t& id)
+{
+  if (id < camList_.GetSize())
+  {
+    camList_index_ = id;
+  }
+}
+
 
 // TODO(tthomas)
 // std::vector<uint32_t> PointGreyCamera::getAttachedCameras()
