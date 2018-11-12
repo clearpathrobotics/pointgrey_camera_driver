@@ -152,7 +152,7 @@ public:
   /*!
    * \brief Used to set the index in the discovered camera list for the camera you wish to connect to.
    *
-   * A Set Serial number will take presidence over this value. If this value is not set, the driver will try to
+   * A Set Serial number will take precedence over this value. If this value is not set, the driver will try to
    * connect to the first camera on the bus. This function should be called before connect().
    */
   void setDesiredCameraIndex(const uint32_t& id);
