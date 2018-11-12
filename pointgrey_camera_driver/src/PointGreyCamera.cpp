@@ -634,7 +634,6 @@ void PointGreyCamera::setDesiredCameraIndex(const uint32_t& id)
   }
 }
 
-
 // TODO(tthomas)
 // std::vector<uint32_t> PointGreyCamera::getAttachedCameras()
 // {
