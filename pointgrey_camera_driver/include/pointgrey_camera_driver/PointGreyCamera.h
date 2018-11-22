@@ -203,7 +203,8 @@ public:
 private:
   uint32_t serial_;  ///< A variable to hold the serial number of the desired camera.
 
-  uint32_t camList_index_; // the default camera in the camList to connect to when a serial is not provided
+  // the default camera in the camList to connect to when a serial is not provided
+  uint32_t camList_index_;
 
   Spinnaker::SystemPtr system_;
   Spinnaker::CameraList camList_;
