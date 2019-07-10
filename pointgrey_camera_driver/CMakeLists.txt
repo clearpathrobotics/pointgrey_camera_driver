@@ -112,6 +112,11 @@ install(DIRECTORY launch DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION})
 
 install(DIRECTORY config DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION})
 
+# Camera info XML files must be installed into the nodelet path so they are findable
+# by spinnaker when initialized in the nodelet context.
+file(GLOB camera_xml_files config/*.xml)
+install(FILES ${camera_xml_files} DESTINATION ${CATKIN_GLOBAL_LIB_DESTINATION}/nodelet)
+
 if (CATKIN_ENABLE_TESTING)
   find_package(roslaunch REQUIRED)
   roslaunch_add_file_check(launch/bumblebee.launch)
